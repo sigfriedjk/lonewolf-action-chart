@@ -32,4 +32,18 @@ s=character();s.disciplines=['Mindblast'];R.resolveRound(s,6,true);assert.equal(
 s=character();s.combat.cs=1;R.resolveRound(s,0);assert.equal(s.combat.ep,0);assert.equal(s.combat.status,'victory');
 s=character();s.combat.cs=40;R.resolveRound(s,1);assert.equal(s.ep,0);assert.equal(s.combat.status,'defeat');
 s=character();s.special=[{ep:2},{ep:4}];assert.equal(R.maxEndurance(s),31);
+const book2 = path.join(__dirname,'../all-books-simple/en/xhtml-simple/lw/02fotw.htm');
+if (fs.existsSync(book2)) {
+  const cells=[...fs.readFileSync(book2,'utf8').split('<a id="crtable">')[1].split('</tbody>')[0].matchAll(/<td>([\dk]+\/[\dk]+)<\/td>/g)].map(m=>m[1]);
+  assert.deepEqual(cells,sourceRows.flatMap(row=>row.cells),'Book 2 uses the same combat results table');
+}
+s=character();s.special=[{name:'Shield',ep:0,cs:2},{name:'Sommerswerd',ep:0,cs:0}];
+assert.equal(R.combatSkill(s).total,21,'Carrying the Sommerswerd alone grants no sword bonus');
+s.equipped=-2;assert.equal(R.combatSkill(s).total,27,'Sommerswerd +8, Shield +2, Mindblast +2, no Axe mastery');
+for(const mastery of ['Short Sword','Sword','Broadsword']) {s.mastery=mastery;assert.equal(R.combatSkill(s).total,29,'All sword masteries apply to the Sommerswerd');}
+s.disciplines=[];s.combat.cs=25;s.combat.undead=true;
+R.resolveRound(s,6);assert.equal(s.combat.ep,4,'Sommerswerd doubles undead damage');assert.equal(s.ep,23,'Hero damage is not doubled');
+s=character();s.special=[{name:'Sommerswerd',ep:0}];s.equipped=-2;s.disciplines=[];s.combat.cs=23;s.combat.ep=30;s.combat.maxEP=30;s.combat.undead=true;
+R.resolveRound(s,6,true);assert.equal(s.combat.ep,30,'Undead receive no damage during evasion');
 console.log(`Passed: ${checked} source-table cells, paired ratio boundaries, combat bonuses, evasion, instant kills, and equipment endurance.`);
+console.log('Passed: Book 2 table parity, Shield, Sommerswerd bonuses, sword masteries, and undead damage/evasion.');

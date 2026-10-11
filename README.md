@@ -1,8 +1,16 @@
 # Lone Wolf Action Chart prototype
 
-A mobile-first companion for **Book 1: Flight from the Dark**. Plain HTML, CSS, and JavaScript; no frameworks, build step, account, or backend.
+A mobile-first companion for **Book 1: Flight from the Dark** and **Book 2: Fire on the Water**. Plain HTML, CSS, and JavaScript; no frameworks, build step, account, or backend.
 
-Open `index.html` in a browser, or run `node preview.js` and visit **http://127.0.0.1:4173**. The server is only for local preview. For future static hosting, copy `index.html`, `styles.css`, `app.js`, and `rules.js` together.
+Open `index.html` in a browser, or run `node preview.js` and visit **http://127.0.0.1:4173**. The server is only for local preview. For static hosting, copy `index.html`, `styles.css`, `app.js`, `campaign.js`, and `rules.js` together.
+
+## Moving into Book 2
+
+Tap the book title below the header, then **Carry Book 1 character into Book 2**. Finish any combat and choose your five Book 1 disciplines first. Confirm that you completed the book, choose a sixth Discipline, enter or accept the royal gold roll, and choose up to two Royal Armoury items. Uncheck a carried weapon if you want to exchange it for a new one. A full backpack requires choosing other supplies or freeing space in Book 1 first; carried items are never silently discarded.
+
+Your scores, current endurance, gold, weapons, backpack, Meals, Special Items, Weaponskill mastery, and journal are copied. The Seal of Hammerdal is added, gold is capped at 50, and the new bookmark starts at section 1. Endurance is preserved; it is not automatically refilled. New armour adds its endurance bonus. Each book then keeps an independent chart: later edits in one book do not change the other. Switching books does not grant supplies again.
+
+Book 2 can also start with a fresh character and five disciplines. To restart the active book, use **Menu → Start a new adventure**. Undo can restore a replaced chart during the current session. Export saves both book charts together. Existing Book 1 browser saves and JSON backups migrate automatically; the original browser storage key is retained.
 
 ## GitHub Pages
 
@@ -13,11 +21,13 @@ The original downloaded books are excluded from Git and deployment. The app link
 ## Included
 
 - Five bottom navigation buttons: Chart, Kai, Gear, Combat, and Journal.
+- Book switcher, independent book charts, and Book 1 → Book 2 character carryover with a sixth Discipline and Royal Armoury setup.
 - Editable scores, current endurance, gold, Meals, and section bookmark.
 - New-adventure setup: random scores, starting gold, found equipment, and Weaponskill mastery. Choose five disciplines in the Kai view.
 - Two weapons, eight backpack slots including Meals, and 50 Gold Crowns; Special Items are separate. Long inventory and combat lists are paginated.
 - Mindblast, mastered equipped weapon, unarmed penalty, and configurable section combat skill modifier.
-- Exact Book 1 combat table, one round at a time. Random or manually selected numbers, instant-kill results, and evasion when permitted by the book.
+- Exact Kai combat table shared by Books 1 and 2, one round at a time. Random or manually selected numbers, instant-kill results, and evasion when permitted by the book.
+- Shield adds 2 CS. Add the Sommerswerd using **Gear → Special → Add Special Item → Known item**, then equip it from Special Items. It adds 8 CS plus sword Weaponskill (+2 for Short Sword, Sword, or Broadsword). Tick **Undead enemy** when starting combat to double enemy endurance loss. It uses no regular weapon or backpack slot.
 - Manual Healing, Meals, Healing Potions, and equipment endurance bonuses.
 - Automatic browser storage, JSON export/import, and undo for the last 30 chart changes during this session. Notes autosave as you type; text edits are not individually added to Undo.
 
@@ -25,20 +35,22 @@ The initial chart is an editable starter with CS 15, EP 25, an Axe, one Meal, a 
 
 ## Scope and layout
 
-This prototype supports Book 1, with a layout intended to fit ordinary portrait phone screens without page scrolling. Inventory and combat records use smaller pages on shorter screens (one, two, or four items). Small landscape viewports, larger accessibility text, and dialogs can scroll when needed to keep controls reachable. No book reader is embedded. On very short screens the Chart's +/− endurance buttons give way to the Edit scores dialog.
+This prototype supports Books 1 and 2, with a layout intended to fit ordinary portrait phone screens without page scrolling. Inventory and combat records use smaller pages on shorter screens (one, two, or four items). Small landscape viewports, larger accessibility text, and dialogs can scroll when needed to keep controls reachable. No book reader is embedded. On very short screens the Chart's +/− endurance buttons give way to the Edit scores dialog.
 
-Follow the book for exceptions. Healing is applied manually once per numbered section without combat. Special damage multipliers and other unusual combat effects require manual score adjustments. Later books' additional disciplines, ranks, and rules are not implemented yet. The app runs without network calls once loaded, but it does not yet provide an installable/offline PWA cache.
+Follow the book for exceptions. Healing is applied manually once per numbered section without combat. Sommerswerd undead damage is automated; other unusual combat effects, custom potions, and section-specific losses require manual score adjustments. Books 3 onward are not implemented. The app runs without network calls once loaded, but it does not yet provide an installable/offline PWA cache.
 
 Saves belong to the browser and origin (a local file, localhost, and a hosted domain have separate storage). Export before switching devices or clearing browser data. The app reports unavailable browser storage and offers export. Import validates the save format and asks before replacing the chart. If stored data is invalid, the app shows a recovery message and creates a starter chart.
 
 ## Verification
 
-Run `node tests/rules.test.js`. When the local Book 1 XHTML is available, tests compare all 130 combat result cells directly with it. Otherwise they use a committed table fixture extracted from that source. They check both values of paired ratio columns and exercise bonuses, evasion, instant kills, and endurance bonuses. JavaScript syntax checks: `node --check app.js` and `node --check rules.js`.
+Run `node tests/rules.test.js`, `node tests/campaign.test.js`, and `node tests/app-save.test.js`. Tests compare all 130 combat cells and paired ratio boundaries, check Book 2 table parity when its local XHTML is available, and exercise Shield, Sommerswerd, sword masteries, undead damage, evasion, and instant kills. Campaign tests cover legacy migration, independent book saves, carryover, sixth Discipline, armoury exchanges, capacity checks, gold caps, and invalid imports. App tests exercise browser storage migration and undo across books. Syntax checks: `node --check app.js`, `node --check campaign.js`, and `node --check rules.js`.
 
 Browser verification covered 390×844, 375×667, and 320×568 portrait layouts, the book's combat example, round undo, evasion, a full backpack and pagination, new-adventure setup, persistence after reload, and JSON export/import. All five starter tabs fit without scrolling at the tested portrait sizes. The browser reported no console warnings or errors. `prototype-phone.png` shows the Chart at 390×844.
 
+Book 2 verification covered carryover, switching back to the untouched Book 1 bookmark and journal, persistence after reload, fresh character setup, two-book JSON export/import, Sommerswerd equipment, undead damage, combat Undo, and all five tabs (including the combat setup form) at the same three phone sizes.
+
 ## Sources
 
-Rules were checked against `all-books-simple/en/xhtml-simple/lw/01fftd.htm`, especially Game Rules, Kai Disciplines, Equipment, Combat Rules, and Combat Results Table. The other bundled books were reviewed for structure; the implementation deliberately starts with Book 1.
+Rules were checked against `all-books-simple/en/xhtml-simple/lw/01fftd.htm` and `02fotw.htm`, especially Game Rules, Kai Disciplines, Equipment, Combat Rules, and Combat Results Table. Book 2 sections 79 and 242 and their footnotes describe the Sommerswerd.
 
 Inspired by [Eric's Action Chart](https://www.projectaon.org/staff/eric/lw01.htm). [Project Aon](https://www.projectaon.org/) provides the original books. Lone Wolf was created by Joe Dever. This is an unofficial fan-made prototype; it contains no book narrative or illustrations. Locally downloaded book files retain their own notices and license and are not part of this repository.

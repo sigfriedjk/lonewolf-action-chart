@@ -1,9 +1,9 @@
-/* Optional local preview server. Upload only index.html, styles.css, app.js and rules.js to S3. */
+/* Optional local preview server. Deploy index.html, styles.css, app.js, campaign.js, and rules.js. */
 const http = require('node:http');
 const fs = require('node:fs');
 const path = require('node:path');
 const root = __dirname;
-const allowed = new Set(['index.html','styles.css','app.js','rules.js']);
+const allowed = new Set(['index.html','styles.css','app.js','rules.js','campaign.js']);
 const types = {'.html':'text/html','.htm':'text/html','.js':'text/javascript','.css':'text/css'};
 const server = http.createServer((req,res) => {
   let relative;

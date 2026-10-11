@@ -1,4 +1,4 @@
-/* Book 1 rules, checked against all-books-simple/en/xhtml-simple/lw/01fftd.htm. */
+/* Kai rules, checked against Books 1 and 2 in the local Project Aon XHTML. */
 (function (root) {
   'use strict';
   const weapons = ['Dagger', 'Spear', 'Mace', 'Short Sword', 'Warhammer', 'Sword', 'Axe', 'Sword', 'Quarterstaff', 'Broadsword'];
@@ -30,11 +30,13 @@
   const clamp = (n, lo, hi) => Math.min(hi, Math.max(lo, n));
   const maxEndurance = s => s.baseEP + s.epBonus + s.special.reduce((sum, item) => sum + item.ep, 0);
   function combatSkill(s, immune = false, modifier = 0) {
-    const weapon = s.weapons[s.equipped];
+    const sunSword = s.equipped === -2 && s.special.some(v => v.name === 'Sommerswerd') ? 8 : 0;
+    const weapon = sunSword ? 'Sommerswerd' : s.weapons[s.equipped];
     const unarmed = weapon ? 0 : -4;
-    const mastery = weapon && weapon === s.mastery && s.disciplines.includes('Weaponskill') ? 2 : 0;
+    const mastery = weapon && (sunSword ? ['Short Sword','Sword','Broadsword'].includes(s.mastery) : weapon === s.mastery) && s.disciplines.includes('Weaponskill') ? 2 : 0;
     const mindblast = s.disciplines.includes('Mindblast') && !immune ? 2 : 0;
-    return { total: s.baseCS + s.csBonus + unarmed + mastery + mindblast + modifier, unarmed, mastery, mindblast };
+    const equipment = s.special.reduce((sum,item) => sum + (item.cs || 0), 0);
+    return { total: s.baseCS + s.csBonus + unarmed + mastery + mindblast + modifier + equipment + sunSword, unarmed, mastery, mindblast, equipment, sunSword };
   }
   function combatResult(ratio, roll) {
     if (!Number.isInteger(ratio) || !Number.isInteger(roll) || roll < 0 || roll > 9) throw new Error('Invalid combat input');
@@ -47,7 +49,8 @@
     const ratio = combatSkill(s, c.immune, c.modifier).total - c.cs;
     const result = combatResult(ratio, roll);
     const heroLoss = result.hero === 'k' ? s.ep : Math.min(s.ep, result.hero);
-    const enemyLoss = evade ? 0 : result.enemy === 'k' ? c.ep : Math.min(c.ep, result.enemy);
+    const multiplier = c.undead && combatSkill(s).sunSword ? 2 : 1;
+    const enemyLoss = evade ? 0 : result.enemy === 'k' ? c.ep : Math.min(c.ep, result.enemy * multiplier);
     s.ep -= heroLoss;
     c.ep -= enemyLoss;
     c.rounds.push({ roll, ratio, heroLoss, enemyLoss, evade });
