@@ -35,6 +35,7 @@ function persist() {
   try { localStorage.setItem(STORAGE_KEY,JSON.stringify(campaign)); storageAvailable = true; }
   catch { storageAvailable = false; }
   $('#save-state').textContent = storageAvailable ? 'Saved on device' : 'Use Export to save';
+  $('#save-state').dataset.unavailable = String(!storageAvailable);
 }
 function toast(message) {
   clearTimeout(toastTimer); $('#toast').textContent = message; $('#toast').classList.add('show');
@@ -58,10 +59,10 @@ const icons = {
   combat:'<path d="m4 3 13 13M3 4l1 4 4-4-4-1zM14 18l4-4M16 17l4 4M20 3 3 20M16 4l4-1-1 4M3 21l4-4M5 14l5 5"/>',
   journal:'<path d="M4 4h6a3 3 0 0 1 3 3v14a4 4 0 0 0-4-2H4zM13 7a3 3 0 0 1 3-3h4v15h-3a4 4 0 0 0-4 2"/>'
 };
-function heading(title, subtitle, badge = '') { return `<div class="page-heading"><div><div class="kicker">${subtitle}</div><h2>${title}</h2></div>${badge ? `<span class="tag">${badge}</span>` : ''}</div>`; }
+function heading(title, controls = '') { return `<div class="tab-toolbar"><h2 title="${escapeHTML(title)}">${escapeHTML(title)}</h2>${controls}</div>`; }
 function pageChart() {
   const max = R.maxEndurance(state), skill = R.combatSkill(state);
-  return `<div class="page-heading"><div><button class="kicker kicker-button" data-action="view" data-view="kai">KAI ${state.disciplines.length>=6?'ASPIRANT':'INITIATE'} · ${state.disciplines.length}/${C.limit(state)} SKILLS →</button><h2>Your adventure</h2></div><button class="tag bookmark-button" data-action="bookmark">Section ${state.section} ✎</button></div>
+  return `<div class="tab-toolbar"><h2 class="sr-only">Character chart</h2><button class="toolbar-button skill-link" data-action="view" data-view="kai"><span class="skill-dots" aria-hidden="true">${Array.from({length:C.limit(state)},(_,i)=>`<i class="${i<state.disciplines.length?'filled':''}"></i>`).join('')}</span>${state.disciplines.length}/${C.limit(state)} Kai skills <span aria-hidden="true">›</span></button><button class="toolbar-button" data-action="undo" ${!undoStack.length?'disabled':''}>↶ Undo</button></div>
     <div class="grid-two">
       <section class="card"><div class="stat-top"><h3 class="card-title">Combat skill</h3><button class="text-button" data-action="stats">Edit</button></div><div class="stat-value">${skill.total}</div><p class="caption">${state.baseCS} base ${signed(skill.total-state.baseCS)} bonus</p><div class="stat-controls"><span class="hint">${state.equipped===-2?'Sommerswerd':state.weapons[state.equipped] || 'Unarmed (−4)'}</span></div></section>
       <section class="card endurance"><div class="stat-top"><h3 class="card-title">Endurance</h3><button class="text-button" data-action="stats">Edit</button></div><div class="stat-value">${state.ep}<small> / ${max}</small></div><div class="meter" role="meter" aria-label="Endurance" aria-valuemin="0" aria-valuemax="${max}" aria-valuenow="${state.ep}"><span style="width:${state.ep/max*100}%"></span></div><div class="stat-controls"><button class="square" data-action="ep" data-value="-1" aria-label="Lose one endurance" ${!state.ep?'disabled':''}>−</button><button class="square" data-action="ep" data-value="1" aria-label="Restore one endurance" ${!state.ep || state.ep===max?'disabled':''}>+</button><span class="caption">${state.ep === 0 ? 'Fallen' : 'Current'}</span></div></section>
@@ -73,8 +74,9 @@ function pageChart() {
     <p class="footer-note">Keep the book beside you. Your chart remembers the rest.</p>`;
 }
 function pageKai() {
-  return `<div class="page-heading"><div><div class="kicker">CHOOSE ${C.limit(state)===6?'SIX':'FIVE'} · ${state.disciplines.length}/${C.limit(state)} SELECTED</div><h2>Kai Disciplines</h2></div><button class="tag bookmark-button" data-action="mastery-dialog" aria-label="Edit Weaponskill mastery">${state.mastery} ✎</button></div>
+  return `${heading('Disciplines',`<button class="toolbar-button" data-action="mastery-dialog" aria-label="Edit Weaponskill mastery">Mastery: ${state.mastery} ✎</button>`)}
     <div class="discipline-grid">${R.disciplines.map(([name,description])=>`<button class="discipline" aria-pressed="${state.disciplines.includes(name)}" data-action="discipline" data-name="${name}" title="${escapeHTML(description)}"><span class="check" aria-hidden="true">✓</span>${name}</button>`).join('')}</div>
+    <p class="selection-summary"><span>${state.disciplines.length} of ${C.limit(state)} selected</span><span>${state.disciplines.length===C.limit(state)?'Skills ready':`Choose ${C.limit(state)-state.disciplines.length} more`}</span></p>
     <p class="discipline-info" id="discipline-info">Tap a skill to select it and read its effect.</p>
     <p class="footer-note">Mindblast and equipped Weaponskill bonuses apply in combat.<br>Use Healing once per section without combat.</p>`;
 }
@@ -91,29 +93,32 @@ function pageGear() {
     const note = gearView === 'special' ? `${entry.effect}${entry.ep ? ` · +${entry.ep} max EP` : ''}${entry.cs ? ` · +${entry.cs} CS` : ''}` : gearView === 'weapons' ? state.equipped === index ? 'Ready for combat' : 'Carried weapon' : name === 'Meal' ? 'One backpack slot' : 'Backpack Item';
     return `<div class="item"><span class="number">${String(index+1).padStart(2,'0')}</span><div class="grow"><div class="item-name">${escapeHTML(name)}</div><div class="item-note">${escapeHTML(note)}</div></div>${gearView==='special' && name==='Sommerswerd' ? `<button class="equip ${state.equipped===-2?'active':''}" data-action="equip" data-index="-2">${state.equipped===-2?'Equipped':'Equip'}</button>` : ''}${gearView === 'weapons' ? `<button class="equip ${state.equipped===index?'active':''}" data-action="equip" data-index="${index}">${state.equipped===index?'Equipped':'Equip'}</button>` : name === 'Healing Potion' && gearView === 'backpack' ? `<button class="equip" data-action="potion" data-index="${index-state.meals}" ${!state.ep || state.combat?.status==='active'?'disabled':''}>Use +4</button>` : ''}<button class="icon-button" data-action="remove-item" data-index="${index}" aria-label="Remove ${escapeHTML(name)}">×</button></div>`;
   }).join('');
-  return `${heading('Your equipment','TRAVEL LIGHT',capacity)}<div class="segmented" aria-label="Equipment type">${[['weapons','Weapons'],['backpack','Backpack'],['special','Special']].map(([key,title])=>`<button data-action="gear-tab" data-tab="${key}" aria-pressed="${gearView===key}">${title}</button>`).join('')}</div><p class="caption">${hint}</p><div class="inventory-list">${items || '<div class="empty">Nothing carried here yet.<br>Add items as you find them in the book.</div>'}</div>${entries.length>size?`<div class="pager"><button class="square" data-action="gear-page" data-value="-1" aria-label="Previous items" ${gearPage===0?'disabled':''}>‹</button><span>Page ${gearPage+1} of ${Math.ceil(entries.length/size)}</span><button class="square" data-action="gear-page" data-value="1" aria-label="Next items" ${gearPage+1>=Math.ceil(entries.length/size)?'disabled':''}>›</button></div>`:''}<div class="gear-actions"><button class="primary" data-action="add-item" ${gearView==='weapons'&&entries.length===2 || gearView==='backpack'&&entries.length===8 || gearView==='special'&&entries.length===100?'disabled':''}>+ Add ${gearView==='special'?'Special Item':gearView==='backpack'?'item':'weapon'}</button>${gearView==='backpack'?`<button class="secondary" data-action="eat" ${!state.ep?'disabled':''}>Eat a Meal</button>`:''}</div>${gearView==='weapons'?`<button class="text-button" data-action="unarmed">Fight unarmed (−4 combat skill)</button>`:''}<p class="footer-note">Discarding an item can be reversed with Undo in the menu.</p>`;
+  const addDisabled = gearView==='weapons'&&entries.length===2 || gearView==='backpack'&&entries.length===8 || gearView==='special'&&entries.length===100;
+  return `${heading('Equipment',`<span class="toolbar-status">${capacity}</span><button class="toolbar-button add-button" data-action="add-item" aria-label="${gearView==='weapons'?'Add a weapon':gearView==='backpack'?'Add a backpack item':'Add a Special Item'}" ${addDisabled?'disabled':''}>＋ Add</button>`)}<div class="segmented" aria-label="Equipment type">${[['weapons','Weapons'],['backpack','Backpack'],['special','Special']].map(([key,title])=>`<button data-action="gear-tab" data-tab="${key}" aria-pressed="${gearView===key}">${title}</button>`).join('')}</div><p class="caption">${hint}</p><div class="inventory-list">${items || '<div class="empty">Nothing carried here yet.<br>Add items as you find them in the book.</div>'}</div>${entries.length>size?`<div class="pager"><button class="square" data-action="gear-page" data-value="-1" aria-label="Previous items" ${gearPage===0?'disabled':''}>‹</button><span>Page ${gearPage+1} of ${Math.ceil(entries.length/size)}</span><button class="square" data-action="gear-page" data-value="1" aria-label="Next items" ${gearPage+1>=Math.ceil(entries.length/size)?'disabled':''}>›</button></div>`:''}${gearView==='backpack'?`<button class="secondary" data-action="eat" ${!state.ep?'disabled':''}>Eat a Meal</button>`:''}${gearView==='weapons'?`<button class="text-button" data-action="unarmed">Fight unarmed (−4 combat skill)</button>`:''}<p class="footer-note">Discarding an item can be reversed with Undo in the menu.</p>`;
 }
-function pageSize() { return matchMedia('(max-height:660px)').matches ? 1 : matchMedia('(max-height:760px)').matches ? 2 : 4; }
+function pageSize() { return matchMedia('(max-height:660px)').matches ? 2 : matchMedia('(max-height:760px)').matches ? 3 : 4; }
 function pageCombat() {
   const c = state.combat;
-  if (!c) return `${heading('Face your enemy','COMBAT RECORD')}<p class="caption">Enter the enemy’s scores from your current section.</p><form id="combat-form" class="form-stack"><label>Enemy name<input name="name" maxlength="80" placeholder="e.g. Gourgaz" required></label><div class="grid-two"><label>Combat skill<input name="cs" type="number" inputmode="numeric" min="0" max="99" value="15" required></label><label>Endurance<input name="ep" type="number" inputmode="numeric" min="1" max="999" value="20" required></label></div><div class="grid-two"><label>Section CS modifier<input name="modifier" type="number" inputmode="numeric" min="-99" max="99" value="0" required></label><label class="checkbox-row"><input name="immune" type="checkbox">Immune to Mindblast</label></div>${state.book===2?'<div class="combat-options"><label class="checkbox-row"><input name="undead" type="checkbox">Undead enemy</label></div>':''}<p class="hint">Your combat skill: ${R.combatSkill(state).total}. Add any section-specific skill adjustment above.</p><button class="primary full" ${!state.ep?'disabled':''}>Start combat</button></form><p class="footer-note">One round at a time, using the Kai Combat Results Table.<br>${state.book===2?'Equipped Sommerswerd doubles damage to undead.':'Follow your section for special combat effects.'}</p>`;
+  if (!c) return `${heading('Combat',`<span class="toolbar-status">Your CS <strong>${R.combatSkill(state).total}</strong></span>`)}<form id="combat-form" class="form-stack"><label>Enemy name<input name="name" maxlength="80" placeholder="e.g. Gourgaz" required></label><div class="grid-two"><label>Combat skill<input name="cs" type="number" inputmode="numeric" min="0" max="99" value="15" required></label><label>Endurance<input name="ep" type="number" inputmode="numeric" min="1" max="999" value="20" required></label></div><div class="grid-two"><label>Section CS modifier<input name="modifier" type="number" inputmode="numeric" min="-99" max="99" value="0" required></label><label class="checkbox-row"><input name="immune" type="checkbox">Immune to Mindblast</label></div>${state.book===2?'<div class="combat-options"><label class="checkbox-row"><input name="undead" type="checkbox">Undead enemy</label></div>':''}<p class="hint">Your combat skill: ${R.combatSkill(state).total}. Add any section-specific skill adjustment above.</p><button class="primary full" ${!state.ep?'disabled':''}>Start combat</button></form><p class="footer-note">One round at a time, using the Kai Combat Results Table.<br>${state.book===2?'Equipped Sommerswerd doubles damage to undead.':'Follow your section for special combat effects.'}</p>`;
   const skill = R.combatSkill(state,c.immune,c.modifier), ratio = skill.total-c.cs, active = c.status==='active';
   const latest = c.rounds.at(-1);
   const outcome = {victory:'Victory. Your enemy has fallen.',defeat:'You have fallen. Your adventure ends here.',evaded:'You escaped from combat.'};
-  const size = Math.min(3,pageSize());
-  roundPage = Math.min(roundPage,Math.max(0,Math.ceil(c.rounds.length/size)-1));
-  const rounds = [...c.rounds].reverse().slice(roundPage*size,roundPage*size+size);
-  return `${heading(escapeHTML(c.name),'COMBAT RECORD',active?'In combat':c.status==='victory'?'Victory':c.status==='evaded'?'Escaped':'Defeat')}
+  const status = active?`Round ${c.rounds.length+1}`:c.status==='victory'?'Victory':c.status==='evaded'?'Escaped':'Defeat';
+  return `${heading(c.name,c.rounds.length?`<button class="toolbar-button ${c.status==='defeat'?'dead':''}" data-action="combat-log" aria-label="View combat history, ${c.rounds.length} rounds">${status} · Log ▾</button>`:`<span class="toolbar-status">${status}</span>`)}
     <div class="combat-hero"><div><div class="combat-title">Lone Wolf</div><div class="combat-number">${state.ep}</div><div class="caption">Endurance · CS ${skill.total}</div></div><div class="ratio"><div class="caption">RATIO</div><strong>${signed(ratio)}</strong></div><div><div class="combat-title">Enemy</div><div class="combat-number">${c.ep}</div><div class="caption">Endurance · CS ${c.cs}</div></div></div>
     <p class="hint">${state.baseCS} base ${signed(state.csBonus)} bonus ${skill.equipment?` · Equipment +${skill.equipment}`:''}${skill.sunSword?' · Sommerswerd +8':''}${c.undead&&skill.sunSword?' · Undead damage ×2':''}${skill.mastery?' · Weaponskill +2':''}${skill.mindblast?' · Mindblast +2':''}${skill.unarmed?' · Unarmed −4':''}${c.modifier?` · Section ${signed(c.modifier)}`:''}${c.immune?' · Mindblast immune':''}</p>
     ${!active?`<div class="combat-result ${c.status==='defeat'?'defeat':''}">${outcome[c.status]}</div>`:latest?`<div class="combat-result">Roll <strong>${latest.roll}</strong> · You lost <strong>${latest.heroLoss}</strong> · Enemy lost <strong>${latest.enemyLoss}</strong></div>`:'<p class="caption">Ready. Roll a number or enter one from the book.</p>'}
     ${active?`<div class="row"><label class="grow" for="combat-roll">Random number (optional)<select id="combat-roll"><option value="random">Roll automatically</option>${Array.from({length:10},(_,i)=>`<option value="${i}">${i}</option>`).join('')}</select></label><button class="primary" style="align-self:end" data-action="round">Fight round</button></div><div class="row"><button class="secondary grow" data-action="evade">Evade…</button><button class="secondary grow" data-action="undo" ${!undoStack.length?'disabled':''}>Undo round</button></div>`:`<div class="row"><button class="primary grow" data-action="finish-combat">Next combat</button><button class="secondary" data-action="undo" ${!undoStack.length?'disabled':''}>Undo</button></div>`}
-    ${rounds.length?`<table class="combat-log"><thead><tr><th>Round</th><th>Roll</th><th>You lost</th><th>Enemy lost</th></tr></thead><tbody>${rounds.map((r,i)=>`<tr><td>${c.rounds.length-roundPage*size-i}${r.evade?' ↗':''}</td><td>${r.roll}</td><td>${r.heroLoss}</td><td>${r.enemyLoss}</td></tr>`).join('')}</tbody></table>`:''}
-    ${c.rounds.length>size?`<div class="pager"><button class="square" data-action="round-page" data-value="-1" aria-label="Newer rounds" ${roundPage===0?'disabled':''}>‹</button><span>Rounds · ${roundPage+1}/${Math.ceil(c.rounds.length/size)}</span><button class="square" data-action="round-page" data-value="1" aria-label="Older rounds" ${roundPage+1>=Math.ceil(c.rounds.length/size)?'disabled':''}>›</button></div>`:''}<p class="footer-note">Evasion is allowed only when your book offers it.</p>`;
+    <p class="footer-note">Evasion is allowed only when your book offers it.</p>`;
 }
-function pageJournal() { return `${heading('Trail notes','YOUR JOURNEY',`Section ${state.section}`)}<p class="caption">Clues, choices, and things to remember.</p><textarea class="journal" id="notes" maxlength="20000" aria-label="Adventure notes" placeholder="The road to Holmgard…">${escapeHTML(state.notes)}</textarea><div class="journal-tools"><button class="secondary" data-action="export">Export save</button><button class="secondary" data-action="rules">Quick rules</button></div><p class="footer-note">Saved in this browser. Export a backup to move to another device.</p>`; }
+function pageJournal() {
+  return `${heading('Journal','<div class="toolbar-actions"><button class="toolbar-button" data-action="rules">Rules</button><button class="toolbar-button" data-action="export">Export save</button></div>')}<textarea class="journal" id="notes" maxlength="20000" aria-label="Adventure notes" placeholder="Clues, choices, and things to remember…">${escapeHTML(state.notes)}</textarea><p class="notes-meta"><span>Saved as you write</span><span id="notes-count">${state.notes.length.toLocaleString()} / 20,000</span></p>`;
+}
 function render() {
   $('#book-button').textContent = `${String(state.book).padStart(2,'0')} / ${C.books[state.book].title} ▾`;
+  $('#section-bookmark').textContent = `Section ${state.section} ✎`;
+  $('#section-bookmark').ariaLabel = `Edit section bookmark, section ${state.section}`;
+  $('#main').ariaLabel = view==='kai'?'Kai Disciplines':view[0].toUpperCase()+view.slice(1);
   $('#main').dataset.view = view;
   $('#main').innerHTML = ({chart:pageChart,kai:pageKai,gear:pageGear,combat:pageCombat,journal:pageJournal})[view]();
   $('.bottom-nav').innerHTML = Object.entries(icons).map(([key,path])=>`<button class="nav-button" data-action="view" data-view="${key}" ${view===key?'aria-current="page"':''}><svg viewBox="0 0 24 24" aria-hidden="true">${path}</svg>${key==='chart'?'Chart':key==='kai'?'Kai':key==='gear'?'Gear':key==='combat'?'Combat':'Journal'}</button>`).join('');
@@ -125,6 +130,14 @@ function dialog(title, content) {
   if (!$('#dialog').open) $('#dialog').showModal();
 }
 function closeDialog() { $('#dialog').close(); }
+function combatLogDialog() {
+  const c=state.combat;
+  if (!c) return;
+  const size=8,pages=Math.max(1,Math.ceil(c.rounds.length/size));
+  roundPage=R.clamp(roundPage,0,pages-1);
+  const rounds=[...c.rounds].reverse().slice(roundPage*size,roundPage*size+size);
+  dialog('Combat history',`<div class="form-stack"><p class="caption">${escapeHTML(c.name)} · ${c.rounds.length} rounds · newest first</p><table class="combat-log"><thead><tr><th>Round</th><th>Roll</th><th>Ratio</th><th>You lost</th><th>Enemy lost</th></tr></thead><tbody>${rounds.map((r,i)=>`<tr><td>${c.rounds.length-roundPage*size-i}${r.evade?' ↗':''}</td><td>${r.roll}</td><td>${signed(r.ratio)}</td><td>${r.heroLoss}</td><td>${r.enemyLoss}</td></tr>`).join('')}</tbody></table>${pages>1?`<div class="pager"><button class="square" data-action="round-page" data-value="-1" aria-label="Newer rounds" ${roundPage===0?'disabled':''}>‹</button><span>Page ${roundPage+1} of ${pages}</span><button class="square" data-action="round-page" data-value="1" aria-label="Older rounds" ${roundPage+1>=pages?'disabled':''}>›</button></div>`:''}<p class="hint">↗ marks an evasion round. Your book determines when evasion is allowed.</p></div>`);
+}
 function booksDialog() {
   const first=campaign.books[1], eligible=first?.ep>0 && first.disciplines.length===5 && first.combat?.status!=='active';
   dialog('Your books',`<div class="menu-options">${Object.entries(C.books).map(([id,book])=>{
@@ -220,7 +233,8 @@ document.addEventListener('click',event=>{
   else if (action==='roll-mastery') { const roll=randomNumber();change(s=>{s.mastery=R.weapons[roll];s.lastRoll=roll;},`Rolled ${roll}: mastery in ${R.weapons[roll]}.`); if ($('#dialog').open) masteryDialog(); }
   else if (action==='gear-tab') {gearView=button.dataset.tab;gearPage=0;render();}
   else if (action==='gear-page') {gearPage+=Number(button.dataset.value);render();}
-  else if (action==='round-page') {roundPage+=Number(button.dataset.value);render();}
+  else if (action==='combat-log') {roundPage=0;combatLogDialog();}
+  else if (action==='round-page') {roundPage+=Number(button.dataset.value);combatLogDialog();}
   else if (action==='add-item') itemDialog();
   else if (action==='equip') change(s=>s.equipped=Number(button.dataset.index));
   else if (action==='unarmed') change(s=>s.equipped=-1,'Unarmed: −4 combat skill.');
@@ -259,7 +273,7 @@ document.addEventListener('change',event=>{
   else if(event.target.id==='mastery') change(s=>s.mastery=event.target.value);
 });
 document.addEventListener('input',event=>{
-  if(event.target.id==='notes') {state.notes=event.target.value;persist();}
+  if(event.target.id==='notes') {state.notes=event.target.value;$('#notes-count').textContent=`${state.notes.length.toLocaleString()} / 20,000`;persist();}
 });
 document.addEventListener('submit',event=>{
   const form=event.target;event.preventDefault();const data=new FormData(form);const number=name=>Number(data.get(name));

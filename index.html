@@ -6,19 +6,19 @@
   <meta name="theme-color" content="#142f2b">
   <meta name="description" content="A pocket Action Chart for Lone Wolf Books 1 and 2. Carry your character between adventures.">
   <title>Lone Wolf · Action Chart</title>
-  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="styles.css?v=compact1">
   <script src="rules.js" defer></script>
   <script src="campaign.js" defer></script>
-  <script src="app.js" defer></script>
+  <script src="app.js?v=compact1" defer></script>
 </head>
 <body>
   <div class="app">
     <header class="header">
       <div class="brand-mark" aria-hidden="true"><svg viewBox="0 0 40 40"><path d="M7 7l10 7h6l10-7-3 20-10 8-10-8zM13 22l4 2m10-2-4 2M17 29h6"/></svg></div>
-      <div class="brand"><span class="eyebrow">LONE WOLF</span><h1>Action Chart</h1></div>
+      <div class="brand"><h1>Action Chart</h1><div class="brand-subline"><span class="eyebrow">LONE WOLF</span><span class="save-state" id="save-state" role="status">Saved on device</span></div></div>
       <button class="icon-button" id="menu-button" aria-label="Open adventure menu">☰</button>
     </header>
-    <div class="book-strip"><button id="book-button" data-action="books" aria-label="Switch books">01 / Flight from the Dark ▾</button><span class="save-state" id="save-state">Saved on device</span></div>
+    <div class="book-strip"><button id="book-button" data-action="books" aria-label="Switch books">01 / Flight from the Dark ▾</button><button class="section-bookmark" id="section-bookmark" data-action="bookmark" aria-label="Edit section bookmark">Section 1 ✎</button></div>
     <main id="main" tabindex="-1"></main>
     <nav class="bottom-nav" aria-label="Action Chart sections"></nav>
   </div>
