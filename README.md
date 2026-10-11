@@ -34,13 +34,14 @@ The original downloaded books are excluded from Git and deployment. The app link
 - Exact Kai combat table shared by Books 1 and 2, one round at a time. Random or manually selected numbers, instant-kill results, and evasion when permitted by the book. The combat header shows the enemy and current round; tap **Log** to open a paginated history, including each round's ratio and losses.
 - Shield adds 2 CS. Add the Sommerswerd using **Gear → Special → Add Special Item → Known item**, then equip it from Special Items. It adds 8 CS plus sword Weaponskill (+2 for Short Sword, Sword, or Broadsword). Tick **Undead enemy** when starting combat to double enemy endurance loss. It uses no regular weapon or backpack slot.
 - Manual Healing, Meals, Healing Potions, and equipment endurance bonuses.
+- Meals and **Eat a Meal** share one card on Chart. Tap the Meal count to open the Backpack; eating is available on Chart only. Apply Healing with the Endurance **+** button, which remains visible on compact phone screens.
 - Automatic browser storage, JSON export/import, and undo for the last 30 chart changes during this session. Notes autosave as you type; text edits are not individually added to Undo.
 
 The initial chart is an editable starter with CS 15, EP 25, an Axe, one Meal, a Map, and a Healing Potion. Use **Menu → Start a new adventure** to roll a character. Scores and chosen disciplines can also be entered manually.
 
 ## Scope and layout
 
-This prototype supports Books 1 and 2, with a layout intended to fit ordinary portrait phone screens without page scrolling. Inventory uses two, three, or four items per page, depending on screen height. Combat history uses eight rounds per page in a dialog. Small landscape viewports, larger accessibility text, and dialogs can scroll when needed to keep controls reachable. No book reader is embedded. On very short screens the Chart's +/− endurance buttons give way to the Edit scores dialog.
+This prototype supports Books 1 and 2, with a layout intended to fit ordinary portrait phone screens without page scrolling. Inventory uses two, three, or four items per page, depending on screen height. Combat history uses eight rounds per page in a dialog. Small landscape viewports, larger accessibility text, and dialogs can scroll when needed to keep controls reachable. No book reader is embedded. Endurance +/− controls remain available on the tested compact portrait screens; Edit scores supports larger adjustments.
 
 Follow the book for exceptions. Healing is applied manually once per numbered section without combat. Sommerswerd undead damage is automated; other unusual combat effects, custom potions, and section-specific losses require manual score adjustments. Books 3 onward are not implemented. The app runs without network calls once loaded, but it does not yet provide an installable/offline PWA cache.
 
@@ -57,6 +58,8 @@ Book 2 verification covered carryover, switching back to the untouched Book 1 bo
 Compact header verification covered the shared bookmark, Chart Undo, Gear Add, Journal character count, and paginated combat history. All five tabs fit at 390×844, 375×667, and 320×568, including an active nine-round combat record. No dependencies were added.
 
 Discipline verification covered real 750 ms pointer holds for selection and removal, quick taps, keyboard Enter, explicit dialog selection, full-skill limits, and a quick tap immediately after a hold. The grid, hint, and description dialogs fit the same three phone sizes without scrolling or horizontal overflow.
+
+Meal card verification covered eating, Hunting exceptions, immediate count updates, Undo, and opening the Backpack from the count. Both book charts fit the three tested portrait sizes with Endurance +/− visible and no Eat button in Gear.
 
 ## Sources
 
