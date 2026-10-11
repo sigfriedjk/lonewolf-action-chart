@@ -1,0 +1,60 @@
+/* Book 1 rules, checked against all-books-simple/en/xhtml-simple/lw/01fftd.htm. */
+(function (root) {
+  'use strict';
+  const weapons = ['Dagger', 'Spear', 'Mace', 'Short Sword', 'Warhammer', 'Sword', 'Axe', 'Sword', 'Quarterstaff', 'Broadsword'];
+  const disciplines = [
+    ['Camouflage', 'Blend into your surroundings.'],
+    ['Hunting', 'No Meal needed when instructed to eat, unless the book says otherwise.'],
+    ['Sixth Sense', 'Sense danger and hidden intentions.'],
+    ['Tracking', 'Read tracks and find the right path.'],
+    ['Healing', 'Recover 1 endurance per section without combat.'],
+    ['Weaponskill', '+2 combat skill with your mastered weapon.'],
+    ['Mindshield', 'Protection against attacks by Mindblast.'],
+    ['Mindblast', '+2 combat skill unless the enemy is immune.'],
+    ['Animal Kinship', 'Communicate with animals.'],
+    ['Mind Over Matter', 'Move small objects by concentration.']
+  ];
+  // Rows 0–9; columns: ≤−11, −10/−9, …, 0, 1/2, …, ≥11. Enemy loss / hero loss.
+  const table = [
+    ['6/0','7/0','8/0','9/0','10/0','11/0','12/0','14/0','16/0','18/0','k/0','k/0','k/0'],
+    ['0/k','0/k','0/8','0/6','1/6','2/5','3/5','4/5','5/4','6/4','7/4','8/3','9/3'],
+    ['0/k','0/8','0/7','1/6','2/5','3/5','4/4','5/4','6/3','7/3','8/3','9/3','10/2'],
+    ['0/8','0/7','1/6','2/5','3/5','4/4','5/4','6/3','7/3','8/3','9/2','10/2','11/2'],
+    ['0/8','1/7','2/6','3/5','4/4','5/4','6/3','7/3','8/2','9/2','10/2','11/2','12/2'],
+    ['1/7','2/6','3/5','4/4','5/4','6/3','7/2','8/2','9/2','10/2','11/2','12/2','14/1'],
+    ['2/6','3/6','4/5','5/4','6/3','7/2','8/2','9/2','10/2','11/1','12/1','14/1','16/1'],
+    ['3/5','4/5','5/4','6/3','7/2','8/2','9/1','10/1','11/1','12/0','14/0','16/0','18/0'],
+    ['4/4','5/4','6/3','7/2','8/1','9/1','10/0','11/0','12/0','14/0','16/0','18/0','k/0'],
+    ['5/3','6/3','7/2','8/0','9/0','10/0','11/0','12/0','14/0','16/0','18/0','k/0','k/0']
+  ];
+  const clamp = (n, lo, hi) => Math.min(hi, Math.max(lo, n));
+  const maxEndurance = s => s.baseEP + s.epBonus + s.special.reduce((sum, item) => sum + item.ep, 0);
+  function combatSkill(s, immune = false, modifier = 0) {
+    const weapon = s.weapons[s.equipped];
+    const unarmed = weapon ? 0 : -4;
+    const mastery = weapon && weapon === s.mastery && s.disciplines.includes('Weaponskill') ? 2 : 0;
+    const mindblast = s.disciplines.includes('Mindblast') && !immune ? 2 : 0;
+    return { total: s.baseCS + s.csBonus + unarmed + mastery + mindblast + modifier, unarmed, mastery, mindblast };
+  }
+  function combatResult(ratio, roll) {
+    if (!Number.isInteger(ratio) || !Number.isInteger(roll) || roll < 0 || roll > 9) throw new Error('Invalid combat input');
+    const column = ratio <= -11 ? 0 : ratio >= 11 ? 12 : ratio === 0 ? 6 : ratio < 0 ? Math.floor((ratio + 10) / 2) + 1 : Math.ceil(ratio / 2) + 6;
+    const [enemy, hero] = table[roll][column].split('/').map(v => v === 'k' ? 'k' : Number(v));
+    return { enemy, hero };
+  }
+  function resolveRound(s, roll, evade = false) {
+    const c = s.combat;
+    const ratio = combatSkill(s, c.immune, c.modifier).total - c.cs;
+    const result = combatResult(ratio, roll);
+    const heroLoss = result.hero === 'k' ? s.ep : Math.min(s.ep, result.hero);
+    const enemyLoss = evade ? 0 : result.enemy === 'k' ? c.ep : Math.min(c.ep, result.enemy);
+    s.ep -= heroLoss;
+    c.ep -= enemyLoss;
+    c.rounds.push({ roll, ratio, heroLoss, enemyLoss, evade });
+    c.status = s.ep === 0 ? 'defeat' : evade ? 'evaded' : c.ep === 0 ? 'victory' : 'active';
+    return c.rounds.at(-1);
+  }
+  const rules = { weapons, disciplines, table, clamp, maxEndurance, combatSkill, combatResult, resolveRound };
+  if (typeof module !== 'undefined') module.exports = rules;
+  else root.LWRules = rules;
+})(typeof window !== 'undefined' ? window : globalThis);

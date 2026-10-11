@@ -1,0 +1,6 @@
+# Original Project Aon book downloads are local reference material.
+/all-books-simple/
+# Local adventure backups and temporary files.
+*-save.json
+*.tmp
+/node_modules/
