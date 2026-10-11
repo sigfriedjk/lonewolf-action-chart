@@ -3,15 +3,15 @@
   'use strict';
   const weapons = ['Dagger', 'Spear', 'Mace', 'Short Sword', 'Warhammer', 'Sword', 'Axe', 'Sword', 'Quarterstaff', 'Broadsword'];
   const disciplines = [
-    ['Camouflage', 'Blend into your surroundings.'],
-    ['Hunting', 'No Meal needed when instructed to eat, unless the book says otherwise.'],
-    ['Sixth Sense', 'Sense danger and hidden intentions.'],
-    ['Tracking', 'Read tracks and find the right path.'],
-    ['Healing', 'Recover 1 endurance per section without combat.'],
-    ['Weaponskill', '+2 combat skill with your mastered weapon.'],
-    ['Mindshield', 'Protection against attacks by Mindblast.'],
-    ['Mindblast', '+2 combat skill unless the enemy is immune.'],
-    ['Animal Kinship', 'Communicate with animals.'],
+    ['Camouflage', 'Hide among natural surroundings and pass enemies unnoticed. In settlements, disguise your appearance and speech to fit in with the locals.'],
+    ['Hunting', 'Find food in the wild and stalk prey quietly. Usually you do not need a Meal when told to eat; deserts, wastelands, and specific book instructions can prevent hunting.'],
+    ['Sixth Sense', 'Notice approaching danger and sense the true intentions of people or the purpose of unfamiliar objects. The book tells you when this insight reveals a choice.'],
+    ['Tracking', 'Follow footprints and other trails, navigate wilderness routes, and locate people or objects in towns. Use it when a section offers a Tracking option.'],
+    ['Healing', 'Restore 1 Endurance for each numbered section without combat, once you are wounded. Never exceed your maximum; use the chart’s Healing +1 control to apply it yourself.'],
+    ['Weaponskill', 'Gain 2 Combat Skill while fighting with the weapon type you mastered. Mastery does not give you that weapon; set your mastered type with the Mastery control.'],
+    ['Mindshield', 'Prevent Endurance loss caused by an enemy’s Mindblast. This protects against mental attacks; follow the section for other sources of damage.'],
+    ['Mindblast', 'Attack an enemy mentally while also using your weapon, gaining 2 Combat Skill. The bonus does not apply to enemies the book identifies as immune; tick their immunity when starting combat.'],
+    ['Animal Kinship', 'Communicate with some animals and sense the intentions of others. The book offers choices where this understanding can help.'],
     ['Mind Over Matter', 'Move small objects by concentration.']
   ];
   // Rows 0–9; columns: ≤−11, −10/−9, …, 0, 1/2, …, ≥11. Enemy loss / hero loss.

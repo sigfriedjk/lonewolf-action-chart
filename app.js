@@ -75,9 +75,9 @@ function pageChart() {
 }
 function pageKai() {
   return `${heading('Disciplines',`<button class="toolbar-button" data-action="mastery-dialog" aria-label="Edit Weaponskill mastery">Mastery: ${state.mastery} ✎</button>`)}
-    <div class="discipline-grid">${R.disciplines.map(([name,description])=>`<button class="discipline" aria-pressed="${state.disciplines.includes(name)}" data-action="discipline" data-name="${name}" title="${escapeHTML(description)}"><span class="check" aria-hidden="true">✓</span>${name}</button>`).join('')}</div>
+    <div class="discipline-grid">${R.disciplines.map(([name])=>`<button class="discipline" aria-pressed="${state.disciplines.includes(name)}" aria-haspopup="dialog" aria-describedby="discipline-hint" data-action="discipline" data-name="${name}"><span class="check" aria-hidden="true">✓</span>${name}</button>`).join('')}</div>
     <p class="selection-summary"><span>${state.disciplines.length} of ${C.limit(state)} selected</span><span>${state.disciplines.length===C.limit(state)?'Skills ready':`Choose ${C.limit(state)-state.disciplines.length} more`}</span></p>
-    <p class="discipline-info" id="discipline-info">Tap a skill to select it and read its effect.</p>
+    <p class="gesture-hint" id="discipline-hint">Tap to read · Hold to select or remove</p>
     <p class="footer-note">Mindblast and equipped Weaponskill bonuses apply in combat.<br>Use Healing once per section without combat.</p>`;
 }
 function pageGear() {
@@ -115,6 +115,7 @@ function pageJournal() {
   return `${heading('Journal','<div class="toolbar-actions"><button class="toolbar-button" data-action="rules">Rules</button><button class="toolbar-button" data-action="export">Export save</button></div>')}<textarea class="journal" id="notes" maxlength="20000" aria-label="Adventure notes" placeholder="Clues, choices, and things to remember…">${escapeHTML(state.notes)}</textarea><p class="notes-meta"><span>Saved as you write</span><span id="notes-count">${state.notes.length.toLocaleString()} / 20,000</span></p>`;
 }
 function render() {
+  cancelDisciplinePress(true);
   $('#book-button').textContent = `${String(state.book).padStart(2,'0')} / ${C.books[state.book].title} ▾`;
   $('#section-bookmark').textContent = `Section ${state.section} ✎`;
   $('#section-bookmark').ariaLabel = `Edit section bookmark, section ${state.section}`;
@@ -130,6 +131,66 @@ function dialog(title, content) {
   if (!$('#dialog').open) $('#dialog').showModal();
 }
 function closeDialog() { $('#dialog').close(); }
+function disciplineDialog(name) {
+  const discipline=R.disciplines.find(d=>d[0]===name);
+  if (!discipline) return;
+  const selected=state.disciplines.includes(name), full=!selected && state.disciplines.length>=C.limit(state);
+  dialog(name,`<div class="form-stack"><p class="discipline-description">${escapeHTML(discipline[1])}</p>${name==='Weaponskill'?`<p class="hint">Your mastery: <strong>${state.mastery}</strong>. ${state.book===2?'Sword, Short Sword, and Broadsword mastery also apply to the Sommerswerd.':''}</p>`:''}<p class="discipline-status">${selected?'✓ Selected':'Not selected'} · ${state.disciplines.length} of ${C.limit(state)} skills chosen</p>${full?'<p class="hint">Your skills are full. Remove another Discipline before selecting this one.</p>':''}<button class="primary full" data-action="toggle-discipline" data-name="${name}" ${full?'disabled':''}>${selected?'Remove this Discipline':'Select this Discipline'}</button></div>`);
+}
+function toggleDiscipline(name) {
+  if (!R.disciplines.some(d=>d[0]===name)) return;
+  const selected=state.disciplines.includes(name);
+  if (!selected && state.disciplines.length>=C.limit(state)) return toast(`Choose ${C.limit(state)}. Remove a skill to replace it.`);
+  change(s=>s.disciplines=selected?s.disciplines.filter(d=>d!==name):[...s.disciplines,name],`${name} ${selected?'removed':'selected'}.`);
+  $(`[data-action="discipline"][data-name="${name}"]`)?.focus({preventScroll:true});
+}
+// Selection happens on release after a deliberate hold, never from a short tap.
+const DISCIPLINE_HOLD_MS=550;
+let disciplinePress=null, suppressedDisciplineClick=null;
+function cancelDisciplinePress(suppress=false) {
+  const press=disciplinePress;
+  if (!press) return;
+  disciplinePress=null;
+  clearTimeout(press.timer);
+  press.button.classList.remove('holding','hold-ready');
+  if (suppress) suppressedDisciplineClick={name:press.name,until:Date.now()+1000};
+  if (press.button.hasPointerCapture?.(press.id)) press.button.releasePointerCapture(press.id);
+  const hint=$('#discipline-hint');
+  if (hint) hint.textContent='Tap to read · Hold to select or remove';
+}
+document.addEventListener('pointerdown',event=>{
+  const button=event.target.closest('[data-action="discipline"]');
+  if (!button || event.button!==0 || event.isPrimary===false || $('#dialog').open) return;
+  cancelDisciplinePress(true);suppressedDisciplineClick=null;
+  const press={button,name:button.dataset.name,id:event.pointerId,x:event.clientX,y:event.clientY,ready:false,timer:null};
+  disciplinePress=press;
+  button.classList.add('holding');
+  // Capture keeps release/cancellation tied to this gesture if it leaves the tile.
+  try {button.setPointerCapture?.(press.id);} catch { /* Document listeners still handle the gesture. */ }
+  press.timer=setTimeout(()=>{
+    if (disciplinePress!==press || !button.isConnected || view!=='kai' || $('#dialog').open) return;
+    press.ready=true;button.classList.add('hold-ready');
+    $('#discipline-hint').textContent=`Release to ${state.disciplines.includes(press.name)?'remove':'select'} ${press.name}`;
+  },DISCIPLINE_HOLD_MS);
+});
+document.addEventListener('pointermove',event=>{
+  const press=disciplinePress;
+  if (press?.id===event.pointerId && Math.hypot(event.clientX-press.x,event.clientY-press.y)>10) cancelDisciplinePress(true);
+});
+document.addEventListener('pointerup',event=>{
+  const press=disciplinePress;
+  if (press?.id!==event.pointerId) return;
+  const bounds=press.button.getBoundingClientRect();
+  if (Math.hypot(event.clientX-press.x,event.clientY-press.y)>10 || event.clientX<bounds.left || event.clientX>bounds.right || event.clientY<bounds.top || event.clientY>bounds.bottom) return cancelDisciplinePress(true);
+  cancelDisciplinePress(press.ready);
+  if (press.ready) toggleDiscipline(press.name);
+});
+for (const type of ['pointercancel','lostpointercapture']) document.addEventListener(type,event=>{
+  if (disciplinePress?.id===event.pointerId) cancelDisciplinePress(true);
+});
+document.addEventListener('contextmenu',event=>{if(event.target.closest('[data-action="discipline"]'))event.preventDefault();});
+window.addEventListener('blur',()=>cancelDisciplinePress(true));
+window.addEventListener('scroll',()=>cancelDisciplinePress(true),true);
 function combatLogDialog() {
   const c=state.combat;
   if (!c) return;
@@ -222,13 +283,12 @@ document.addEventListener('click',event=>{
   else if (action==='eat-required') {closeDialog();eatMeal(true);}
   else if (action==='gold') dialog('Belt pouch',`<form id="gold-form" class="form-stack"><label>Gold Crowns<input name="gold" type="number" inputmode="numeric" min="0" max="50" value="${state.gold}" required></label><p class="hint">Your pouch holds up to 50 Gold Crowns.</p><button class="primary">Save gold</button></form>`);
   else if (action==='discipline') {
-    const name=button.dataset.name, selected=state.disciplines.includes(name);
-    if (!selected && state.disciplines.length===C.limit(state)) return toast(`Choose ${C.limit(state)}. Deselect a skill to replace it.`);
-    change(s=>s.disciplines=selected?s.disciplines.filter(d=>d!==name):[...s.disciplines,name]);
-    $('#discipline-info').textContent = R.disciplines.find(d=>d[0]===name)[1];
-    toast(R.disciplines.find(d=>d[0]===name)[1]);
-    $(`[data-name="${name}"]`).focus();
+    const suppressed=suppressedDisciplineClick;
+    suppressedDisciplineClick=null;
+    if (event.detail!==0 && suppressed?.name===button.dataset.name && Date.now()<suppressed.until) return;
+    disciplineDialog(button.dataset.name);
   }
+  else if (action==='toggle-discipline') {toggleDiscipline(button.dataset.name);disciplineDialog(button.dataset.name);$('#dialog [data-action="toggle-discipline"]')?.focus({preventScroll:true});}
   else if (action==='mastery-dialog') masteryDialog();
   else if (action==='roll-mastery') { const roll=randomNumber();change(s=>{s.mastery=R.weapons[roll];s.lastRoll=roll;},`Rolled ${roll}: mastery in ${R.weapons[roll]}.`); if ($('#dialog').open) masteryDialog(); }
   else if (action==='gear-tab') {gearView=button.dataset.tab;gearPage=0;render();}
@@ -317,9 +377,10 @@ $('#import-file').addEventListener('change',async event=>{
   event.target.value='';
 });
 // Remember notes even if the browser is backgrounded before the field loses focus.
-document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')persist();});
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden'){cancelDisciplinePress(true);persist();}});
 let lastPageSize = pageSize();
 window.addEventListener('resize',()=>{
+  cancelDisciplinePress(true);
   const size = pageSize();
   if (size !== lastPageSize && !$('#dialog').open && ['gear','combat'].includes(view)) render();
   lastPageSize = size;
