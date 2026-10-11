@@ -31,7 +31,7 @@
     if (s.combat) s.combat.undead ??= false;
     if (s.version!==1 || ![1,2].includes(s.book) || typeof s.continued!=='boolean' || (s.book===1 && s.continued) ||
         !integer(s.baseCS,0,99) || !integer(s.csBonus,-99,99) || !integer(s.baseEP,1,99) || !integer(s.epBonus,0,99) ||
-        !integer(s.ep,0,10000) || !integer(s.gold,0,50) || !integer(s.meals,0,8) || !integer(s.section,1,350) || !text(s.notes,20000) ||
+        !integer(s.ep,0,10000) || !integer(s.gold,0,Number.MAX_SAFE_INTEGER) || !integer(s.meals,0,8) || !integer(s.section,1,350) || !text(s.notes,20000) ||
         !Array.isArray(s.weapons) || s.weapons.length>2 || !s.weapons.every(w=>R.weapons.includes(w)) ||
         !integer(s.equipped,-2,1) || (s.equipped>=0 && !s.weapons[s.equipped]) ||
         !Array.isArray(s.backpack) || s.backpack.length+s.meals>8 || !s.backpack.every(v=>text(v,80) && v.trim()) ||
@@ -87,7 +87,7 @@
     }
     s.book=2;s.section=1;s.combat=null;s.lastRoll=null;
     if (!Number.isInteger(options.gold) || options.gold<10 || options.gold>19) throw new Error('Royal gold must be 10–19 Crowns.');
-    s.gold=Math.min(50,s.gold+options.gold);
+    s.gold+=options.gold;
     if (!s.special.some(v=>v.name==='Seal of Hammerdal')) s.special.push({name:'Seal of Hammerdal',effect:'Ring worn on your right hand',ep:0,cs:0});
     const keep=options.keepWeapons ?? s.weapons.map((_,i)=>i);
     if (!Array.isArray(keep) || new Set(keep).size!==keep.length || !keep.every(i=>Number.isInteger(i) && i>=0 && i<s.weapons.length)) throw new Error('Invalid weapon exchange.');
