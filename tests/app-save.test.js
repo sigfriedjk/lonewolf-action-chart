@@ -11,7 +11,7 @@ const legacy=JSON.stringify(old);
 const storage=new Map([['lone-wolf-action-chart-v1',legacy]]);
 const elements=new Map(), listeners=new Map(), rollAnimations=[];
 function element(selector) {
-  if (!elements.has(selector)) elements.set(selector,{dataset:{},classList:{add(name){if(selector==='.random .die') rollAnimations.push(name);},remove(){}},addEventListener(){},focus(){},close(){},scrollTop:0});
+  if (!elements.has(selector)) elements.set(selector,{dataset:{},classList:{add(name){if(selector==='.random .die') rollAnimations.push(name);},remove(){}},addEventListener(){},focus(){},close(){this.open=false;},showModal(){this.open=true;},scrollTop:0});
   return elements.get(selector);
 }
 const context=vm.createContext({window:{LWRules:R,LWCampaign:C,addEventListener(){}},document:{querySelector:element,addEventListener(type,fn){listeners.set(type,fn);}},
@@ -31,8 +31,8 @@ vm.runInContext('undo();undo();undo();undo();undo();',context);
 saved=C.validateSave(JSON.parse(storage.get('lone-wolf-action-chart-v2')));
 assert.equal(saved.activeBook,1);assert.equal(saved.books[1].gold,32);assert.equal(saved.books[1].ep,21);assert.equal(saved.books[2],undefined,'Undo the initial transfer restores the whole campaign');
 assert.equal(storage.get('lone-wolf-action-chart-v1'),legacy);
-function click(action,value) {
-  const button={dataset:{action,value},disabled:false};button.closest=()=>button;
+function click(action,value,extra={}) {
+  const button={dataset:{action,value,...extra},disabled:false};button.closest=()=>button;
   listeners.get('click')({target:button});
 }
 vm.runInContext('change(s=>s.gold=50);',context);
@@ -47,4 +47,18 @@ click('roll');click('roll');
 assert.equal(vm.runInContext('state.lastRoll',context),7);
 assert.deepEqual(rollAnimations,['rolling','rolling'],'Repeated results animate on every click');
 assert.equal(element('#roll-status').textContent,'Roll 2: 7','Repeated results have distinct accessible announcements');
-console.log('Passed: app storage migration, independent book edits, Undo, uncapped gold controls, and repeated-roll feedback.');
+vm.runInContext("change(s=>{s.weapons=['Axe','Sword'];s.equipped=1;s.disciplines=['Weaponskill'];s.mastery='Sword';});gearView='special';",context);
+const specialBefore=vm.runInContext('JSON.stringify(state.special)',context);
+click('weapons');
+click('remove-item',undefined,{index:'0',type:'weapons',return:'weapons'});
+assert.equal(vm.runInContext('JSON.stringify(state.weapons)',context),'["Sword"]');
+assert.equal(vm.runInContext('state.equipped',context),0,'Removing the first weapon keeps the second equipped');
+assert.equal(vm.runInContext('JSON.stringify(state.special)',context),specialBefore,'Weapon removal never removes Special Items, regardless of the Gear tab');
+assert.equal(vm.runInContext('R.combatSkill(state).total',context),20,'Weaponskill remains applied to the equipped Sword');
+vm.runInContext('undo();',context);
+assert.equal(vm.runInContext('JSON.stringify(state.weapons)',context),'["Axe","Sword"]');
+click('equip',undefined,{index:'0',return:'weapons'});
+assert.equal(vm.runInContext('R.combatSkill(state).total',context),18,'Switching to an unmastered weapon removes the mastery bonus');
+click('unarmed',undefined,{return:'weapons'});
+assert.equal(vm.runInContext('R.combatSkill(state).total',context),14,'Unarmed applies the existing penalty');
+console.log('Passed: app storage migration, independent book edits, Undo, uncapped gold, repeated rolls, and weapon management from Stats.');

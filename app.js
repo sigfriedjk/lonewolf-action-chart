@@ -9,7 +9,7 @@ const escapeHTML = value => String(value).replace(/[&<>"']/g, ch => ({'&':'&amp;
 const clone = value => JSON.parse(JSON.stringify(value));
 const signed = value => value > 0 ? `+${value}` : String(value);
 const uniqueWeapons = [...new Set(R.weapons)];
-let view = 'chart', gearView = 'weapons', gearPage = 0, roundPage = 0;
+let view = 'chart', gearView = 'backpack', gearPage = 0, roundPage = 0;
 let toastTimer, storageAvailable = true, recoveryNotice = '', chartRollCount = 0;
 const undoStack = [];
 function randomNumber() {
@@ -65,9 +65,10 @@ function scoreSettings(label) {
 }
 function pageChart() {
   const max = R.maxEndurance(state), skill = R.combatSkill(state);
+  const weapon = state.equipped===-2?'Sommerswerd':state.weapons[state.equipped] || 'Unarmed (−4)';
   return `${heading('Lone Wolf',`<button class="toolbar-button" data-action="undo" ${!undoStack.length?'disabled':''}>↶ Undo</button>`)}
     <div class="grid-two">
-      <section class="card"><div class="stat-top"><h3 class="card-title">Combat skill</h3>${scoreSettings('combat skill')}</div><div class="stat-value">${skill.total}</div><p class="caption">${state.baseCS} base ${signed(skill.total-state.baseCS)} bonus</p><div class="stat-controls"><span class="hint">${state.equipped===-2?'Sommerswerd':state.weapons[state.equipped] || 'Unarmed (−4)'}</span></div></section>
+      <section class="card combat-skill-card"><div class="stat-top"><h3 class="card-title">Combat skill</h3>${scoreSettings('combat skill')}</div><div class="stat-value">${skill.total}</div><p class="caption">${state.baseCS} base ${signed(skill.total-state.baseCS)} bonus</p><button class="weapon-select" data-action="weapons" aria-label="Manage weapons, equipped: ${escapeHTML(weapon)}" aria-haspopup="dialog"><svg viewBox="0 0 24 24" aria-hidden="true">${icons.combat}</svg><span>${escapeHTML(weapon)}</span><span aria-hidden="true">▾</span></button></section>
       <section class="card endurance"><div class="stat-top"><h3 class="card-title">Endurance</h3>${scoreSettings('endurance')}</div><div class="stat-value">${state.ep}<small> / ${max}</small></div><div class="meter" role="meter" aria-label="Endurance" aria-valuemin="0" aria-valuemax="${max}" aria-valuenow="${state.ep}"><span style="width:${state.ep/max*100}%"></span></div><div class="stat-controls"><button class="square" data-action="ep" data-value="-1" aria-label="Lose one endurance" ${!state.ep?'disabled':''}>−</button><button class="square" data-action="ep" data-value="1" aria-label="Restore one endurance" ${!state.ep || state.ep===max?'disabled':''}>+</button></div></section>
     </div>
     ${state.ep === 0 ? '<div class="combat-result defeat">Your adventure has ended. Undo a mistake, or start a new adventure from the menu.</div>' : ''}
@@ -84,20 +85,27 @@ function pageKai() {
 }
 function pageGear() {
   let entries, capacity, hint;
-  if (gearView === 'weapons') { entries = state.weapons; capacity = `${entries.length} / 2 carried`; hint = 'Equip one weapon. With no weapon equipped, combat skill falls by 4.'; }
-  else if (gearView === 'backpack') { entries = [...Array(state.meals).fill('Meal'),...state.backpack]; capacity = `${entries.length} / 8 slots`; hint = 'Each Meal uses one slot. Potions can be used after combat.'; }
-  else { entries = state.special; capacity = `${entries.length} carried`; hint = 'Special Items do not use backpack slots. Add effects as the book instructs.'; }
-  const size = pageSize();
+  if (gearView === 'backpack') { entries = [...Array(state.meals).fill('Meal'),...state.backpack]; capacity = `${entries.length} / 8 slots`; hint = 'Meals use one slot each. Tap a filled slot for details or an empty slot to add.'; }
+  else { entries = state.special; capacity = `${entries.length} carried`; hint = 'Special Items are worn or carried separately. They do not use backpack or regular weapon slots.'; }
+  const size = gearPageSize();
   gearPage = Math.min(gearPage,Math.max(0,Math.ceil(entries.length/size)-1));
-  const items = entries.slice(gearPage*size,gearPage*size+size).map((entry,i) => {
-    const index = gearPage*size+i;
-    const name = gearView === 'special' ? entry.name : entry;
-    const note = gearView === 'special' ? `${entry.effect}${entry.ep ? ` · +${entry.ep} max EP` : ''}${entry.cs ? ` · +${entry.cs} CS` : ''}` : gearView === 'weapons' ? state.equipped === index ? 'Ready for combat' : 'Carried weapon' : name === 'Meal' ? 'One backpack slot' : 'Backpack Item';
-    return `<div class="item"><span class="number">${String(index+1).padStart(2,'0')}</span><div class="grow"><div class="item-name">${escapeHTML(name)}</div><div class="item-note">${escapeHTML(note)}</div></div>${gearView==='special' && name==='Sommerswerd' ? `<button class="equip ${state.equipped===-2?'active':''}" data-action="equip" data-index="-2">${state.equipped===-2?'Equipped':'Equip'}</button>` : ''}${gearView === 'weapons' ? `<button class="equip ${state.equipped===index?'active':''}" data-action="equip" data-index="${index}">${state.equipped===index?'Equipped':'Equip'}</button>` : name === 'Healing Potion' && gearView === 'backpack' ? `<button class="equip" data-action="potion" data-index="${index-state.meals}" ${!state.ep || state.combat?.status==='active'?'disabled':''}>Use +4</button>` : ''}<button class="icon-button" data-action="remove-item" data-index="${index}" aria-label="Remove ${escapeHTML(name)}">×</button></div>`;
-  }).join('');
-  const addDisabled = gearView==='weapons'&&entries.length===2 || gearView==='backpack'&&entries.length===8 || gearView==='special'&&entries.length===100;
-  return `${heading('Equipment',`<span class="toolbar-status">${capacity}</span><button class="toolbar-button add-button" data-action="add-item" aria-label="${gearView==='weapons'?'Add a weapon':gearView==='backpack'?'Add a backpack item':'Add a Special Item'}" ${addDisabled?'disabled':''}>＋ Add</button>`)}<div class="segmented" aria-label="Equipment type">${[['weapons','Weapons'],['backpack','Backpack'],['special','Special']].map(([key,title])=>`<button data-action="gear-tab" data-tab="${key}" aria-pressed="${gearView===key}">${title}</button>`).join('')}</div><p class="caption">${hint}</p><div class="inventory-list">${items || '<div class="empty">Nothing carried here yet.<br>Add items as you find them in the book.</div>'}</div>${entries.length>size?`<div class="pager"><button class="square" data-action="gear-page" data-value="-1" aria-label="Previous items" ${gearPage===0?'disabled':''}>‹</button><span>Page ${gearPage+1} of ${Math.ceil(entries.length/size)}</span><button class="square" data-action="gear-page" data-value="1" aria-label="Next items" ${gearPage+1>=Math.ceil(entries.length/size)?'disabled':''}>›</button></div>`:''}${gearView==='weapons'?`<button class="text-button" data-action="unarmed">Fight unarmed (−4 combat skill)</button>`:''}<p class="footer-note">Discarding an item can be reversed with Undo in the menu.</p>`;
+  const items = entries.slice(gearPage*size,gearPage*size+size).map((entry,i)=>equipmentRow(entry,gearPage*size+i,gearView)).join('');
+  const addDisabled = gearView==='backpack'&&entries.length===8 || gearView==='special'&&entries.length===100;
+  const slots = gearView==='backpack'?`<div class="backpack-slots" aria-label="Eight backpack slots">${Array.from({length:8},(_,i)=>`<button class="inventory-slot ${i<entries.length?'filled':'vacant'}" data-action="${i<entries.length?'item-slot':'add-item'}" data-type="backpack" data-index="${i}" aria-label="Backpack slot ${i+1}: ${i<entries.length?escapeHTML(entries[i]):'Empty, add item'}" ${i<entries.length && Math.floor(i/size)===gearPage?'aria-current="true"':''}><span class="slot-number">${i+1}</span><span>${i<entries.length?escapeHTML(entries[i]):'+ Empty'}</span></button>`).join('')}</div>`:'';
+  const emptySpecial = gearView==='special' && !addDisabled?'<button class="item empty-slot" data-action="add-item" data-type="special"><span aria-hidden="true">＋</span><span>Add a Special Item<small>Worn or carried · no fixed slot limit</small></span></button>':'';
+  return `${heading('Equipment',`<span class="toolbar-status">${capacity}</span><button class="toolbar-button add-button" data-action="add-item" aria-label="${gearView==='backpack'?'Add a backpack item':'Add a Special Item'}" ${addDisabled?'disabled':''}>＋ Add</button>`)}<div class="segmented" aria-label="Equipment type">${[['backpack','Backpack'],['special','Special']].map(([key,title])=>`<button data-action="gear-tab" data-tab="${key}" aria-pressed="${gearView===key}">${title}</button>`).join('')}</div><p class="caption">${hint}</p>${slots}<div class="inventory-list">${items}${emptySpecial}${!items && gearView==='backpack'?'<p class="caption">Your backpack is empty. Add supplies in a free slot.</p>':''}</div>${entries.length>size?`<div class="pager"><button class="square" data-action="gear-page" data-value="-1" aria-label="Previous items" ${gearPage===0?'disabled':''}>‹</button><span>Page ${gearPage+1} of ${Math.ceil(entries.length/size)}</span><button class="square" data-action="gear-page" data-value="1" aria-label="Next items" ${gearPage+1>=Math.ceil(entries.length/size)?'disabled':''}>›</button></div>`:''}<p class="footer-note">Weapons are beside Combat Skill on Stats.<br>Discarding an item can be reversed with Undo in the menu.</p>`;
 }
+function equipmentRow(entry,index,type,returnToWeapons=false) {
+  const name=type==='special'?entry.name:entry;
+  const note=type==='special'?`${entry.effect}${entry.ep?` · +${entry.ep} max EP`:''}${entry.cs?` · +${entry.cs} CS`:''}`:type==='weapons'?state.equipped===index?'Ready for combat':'Carried weapon':name==='Meal'?'One backpack slot':'Backpack Item';
+  const returnAttr=returnToWeapons?'data-return="weapons"':'';
+  return `<div class="item"><span class="number">${String(index+1).padStart(2,'0')}</span><div class="grow"><div class="item-name">${escapeHTML(name)}</div><div class="item-note">${escapeHTML(note)}</div></div>${type==='weapons' || type==='special' && name==='Sommerswerd'?`<button class="equip ${(type==='weapons'?state.equipped===index:state.equipped===-2)?'active':''}" data-action="equip" data-index="${type==='weapons'?index:-2}" ${returnAttr} aria-label="Equip ${escapeHTML(name)}">${(type==='weapons'?state.equipped===index:state.equipped===-2)?'Equipped':'Equip'}</button>`:name==='Healing Potion' && type==='backpack'?`<button class="equip" data-action="potion" data-index="${index-state.meals}" ${!state.ep || state.combat?.status==='active'?'disabled':''}>Use +4</button>`:''}<button class="icon-button" data-action="remove-item" data-type="${type}" data-index="${index}" ${returnAttr} aria-label="Remove ${escapeHTML(name)}">×</button></div>`;
+}
+function weaponsDialog() {
+  const slots=Array.from({length:2},(_,i)=>state.weapons[i]?equipmentRow(state.weapons[i],i,'weapons',true):`<button class="item empty-slot" data-action="add-item" data-type="weapons"><span class="number">${String(i+1).padStart(2,'0')}</span><span>Empty weapon slot<small>＋ Add a weapon</small></span></button>`).join('');
+  dialog('Weapons',`<div class="form-stack"><p class="caption">${state.weapons.length} / 2 regular weapon slots · equip one for combat</p><div class="inventory-list">${slots}</div>${state.special.some(v=>v.name==='Sommerswerd')?`<button class="secondary full" data-action="equip" data-index="-2" data-return="weapons">${state.equipped===-2?'✓ Equipped':'Equip'} Sommerswerd</button><p class="caption">Sommerswerd is a Special Item; it uses no regular weapon slot.</p>`:''}<button class="secondary full" data-action="unarmed" data-return="weapons">${state.equipped===-1?'✓ ':''}Fight unarmed (−4 combat skill)</button><p class="hint">Remove a weapon with ×. Undo is available on Stats.</p></div>`);
+}
+function gearPageSize() { return Math.max(1,pageSize()-1); }
 function pageSize() { return matchMedia('(max-height:660px)').matches ? 2 : matchMedia('(max-height:760px)').matches ? 3 : 4; }
 function pageCombat() {
   const c = state.combat;
@@ -229,8 +237,7 @@ function newDialog() {
   dialog('A new adventure',`<form id="new-form" class="form-stack"><p class="caption">Start Book 1 with fresh scores and equipment. This replaces your Book 1 chart; your Book 2 chart is kept. You can undo it.</p><div class="grid-two"><label>Combat skill (10 + roll)<input name="cs" type="number" min="10" max="19" value="${10+randomNumber()}" required></label><label>Endurance (20 + roll)<input name="ep" type="number" min="20" max="29" value="${20+randomNumber()}" required></label></div><label>Starting Gold Crowns (0–9)<input name="gold" type="number" min="0" max="9" value="${randomNumber()}" required></label><label>Item found at the monastery<select name="loot">${['Broadsword','Sword','Helmet (+2 EP)','Two Meals','Chainmail Waistcoat (+4 EP)','Mace','Healing Potion (+4 recovery)','Quarterstaff','Spear','12 Gold Crowns'].map((name,i)=>`<option value="${i}">${i} · ${name}</option>`).join('')}</select></label><label>Weaponskill mastery<select name="mastery">${weaponOptions(R.weapons[randomNumber()])}</select></label><p class="hint">An Axe, one Meal, and a Map are included. Choose five Kai Disciplines after starting.</p><div class="dialog-actions"><button class="secondary" type="button" data-action="reroll-new">Roll again</button><button class="primary">Begin adventure</button></div></form>`);
   $('#new-form select[name=loot]').value = String(randomNumber());
 }
-function itemDialog() {
-  const type = gearView;
+function itemDialog(type = gearView) {
   const special=type==='special'?`<label>Known item<select name="preset"><option value="custom">Custom Special Item</option><option>Shield</option>${state.book===2?'<option>Sommerswerd</option>':''}</select></label><label>Effect / how it is carried<input name="effect" maxlength="160" placeholder="e.g. Worn on your head"></label><div class="grid-two"><label>Maximum EP bonus<input name="ep" type="number" min="0" max="99" value="0" required></label><label>Combat skill bonus<input name="cs" type="number" min="0" max="99" value="0" required></label></div><p class="hint">Helmet: 2 EP. Chainmail: 4 EP. Shield: 2 CS. Sommerswerd adds 8 CS when equipped; leave its CS field at 0.</p>`:'';
   dialog(type==='weapons'?'Add a weapon':type==='backpack'?'Add to backpack':'Add a Special Item',`<form id="item-form" data-type="${type}" class="form-stack">${special}${type==='weapons'?`<label>Weapon<select name="name">${weaponOptions('Sword')}</select></label>`:`${type==='backpack'?'<label>Item type<select name="kind"><option value="item">Backpack Item</option><option value="meal">Meal</option><option value="potion">Healing Potion</option></select></label>':''}<label>Item name<input name="name" maxlength="80" placeholder="e.g. Torch" ${type==='special'?'required':''}></label>`}<p class="section-error" id="form-error" role="alert"></p><button class="primary">Add item</button></form>`);
 }
@@ -299,20 +306,23 @@ document.addEventListener('click',event=>{
   else if (action==='mastery-dialog') masteryDialog();
   else if (action==='roll-mastery') { const roll=randomNumber();change(s=>{s.mastery=R.weapons[roll];s.lastRoll=roll;},`Rolled ${roll}: mastery in ${R.weapons[roll]}.`); if ($('#dialog').open) masteryDialog(); }
   else if (action==='gear-tab') {gearView=button.dataset.tab;gearPage=0;render();}
+  else if (action==='item-slot') {gearView='backpack';gearPage=Math.floor(Number(button.dataset.index)/gearPageSize());render();}
   else if (action==='gear-page') {gearPage+=Number(button.dataset.value);render();}
   else if (action==='combat-log') {roundPage=0;combatLogDialog();}
   else if (action==='round-page') {roundPage+=Number(button.dataset.value);combatLogDialog();}
-  else if (action==='add-item') itemDialog();
-  else if (action==='equip') change(s=>s.equipped=Number(button.dataset.index));
-  else if (action==='unarmed') change(s=>s.equipped=-1,'Unarmed: −4 combat skill.');
+  else if (action==='weapons') weaponsDialog();
+  else if (action==='add-item') itemDialog(button.dataset.type || gearView);
+  else if (action==='equip') {change(s=>s.equipped=Number(button.dataset.index));if(button.dataset.return==='weapons')weaponsDialog();}
+  else if (action==='unarmed') {change(s=>s.equipped=-1,'Unarmed: −4 combat skill.');if(button.dataset.return==='weapons')weaponsDialog();}
   else if (action==='remove-item') {
     if (state.combat?.status==='active') return toast('Finish combat before changing equipment.');
-    const index=Number(button.dataset.index);
+    const index=Number(button.dataset.index),type=button.dataset.type || gearView;
     change(s=>{
-      if (gearView==='weapons') {s.weapons.splice(index,1);s.equipped=s.equipped===index?-1:s.equipped>index?s.equipped-1:s.equipped;}
-      else if (gearView==='backpack') {if(index<s.meals)s.meals--;else s.backpack.splice(index-s.meals,1);}
+      if (type==='weapons') {s.weapons.splice(index,1);s.equipped=s.equipped===index?-1:s.equipped>index?s.equipped-1:s.equipped;}
+      else if (type==='backpack') {if(index<s.meals)s.meals--;else s.backpack.splice(index-s.meals,1);}
       else {const bonus=s.special[index].ep;if(s.equipped===-2 && s.special[index].name==='Sommerswerd')s.equipped=-1;s.special.splice(index,1);s.ep=R.clamp(s.ep-bonus,0,R.maxEndurance(s));}
     },'Item removed. Undo is available in the menu.');
+    if(button.dataset.return==='weapons')weaponsDialog();
   }
   else if (action==='potion') {
     if (state.ep===R.maxEndurance(state)) return toast('Endurance is already full. Potion kept.');
@@ -369,7 +379,9 @@ document.addEventListener('submit',event=>{
     if(!name) {$('#form-error').textContent='Enter an item name, or choose Meal or Healing Potion.';return;}
     if(type==='special' && ['Shield','Sommerswerd'].includes(name) && state.special.some(v=>v.name===name)) {$('#form-error').textContent=`You already carry a ${name}.`;return;}
     if((type==='weapons'&&state.weapons.length>=2)||(type==='backpack'&&state.meals+state.backpack.length>=8)||(type==='special'&&state.special.length>=100)) {$('#form-error').textContent='No space available. Remove an item first.';return;}
-    change(s=>{if(type==='weapons')s.weapons.push(name);else if(type==='backpack'){if(kind==='meal')s.meals++;else s.backpack.push(name);}else{const bonus=number('ep');s.special.push({name,effect:String(data.get('effect')).trim(),ep:bonus,cs:name==='Sommerswerd'?0:number('cs')});if(s.ep>0)s.ep+=bonus;}},'Item added.');closeDialog();
+    if(type==='backpack')gearPage=Math.floor((kind==='meal'?state.meals:state.meals+state.backpack.length)/gearPageSize());
+    else if(type==='special')gearPage=Math.floor(state.special.length/gearPageSize());
+    change(s=>{if(type==='weapons')s.weapons.push(name);else if(type==='backpack'){if(kind==='meal')s.meals++;else s.backpack.push(name);}else{const bonus=number('ep');s.special.push({name,effect:String(data.get('effect')).trim(),ep:bonus,cs:name==='Sommerswerd'?0:number('cs')});if(s.ep>0)s.ep+=bonus;}},'Item added.');closeDialog();if(type==='weapons')weaponsDialog();
   }
 });
 $('#import-file').addEventListener('change',async event=>{
