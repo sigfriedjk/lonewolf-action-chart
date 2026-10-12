@@ -41,3 +41,4 @@ main[data-view=chart] .stats-note{display:block}
 @media(max-height:760px){main[data-view=gear]{padding-top:5px;padding-bottom:5px;gap:4px}main[data-view=gear] .tab-toolbar{min-height:28px}main[data-view=gear]>.footer-note{display:none}.backpack-list{min-height:373px;gap:3px}}
 @media(max-height:660px){.weapon-select{margin-top:5px}.backpack-list{min-height:366px;gap:2px}}
 @media(max-width:350px){.weapon-select{font-size:11px}}
+main[data-view=special] .special-note{display:block}
