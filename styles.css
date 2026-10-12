@@ -42,3 +42,7 @@ main[data-view=chart] .stats-note{display:block}
 @media(max-height:660px){.weapon-select{margin-top:5px}.backpack-list{min-height:366px;gap:2px}}
 @media(max-width:350px){.weapon-select{font-size:11px}}
 main[data-view=special] .special-note{display:block}
+.endurance .stat-controls .square{flex:1}
+.settings-control,.section-bookmark{display:inline-flex;align-items:center;gap:6px}
+.settings-control svg,.section-bookmark svg{width:17px;height:17px;flex:none;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
+.mastery-settings{min-width:0;max-width:49%}.mastery-settings span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}

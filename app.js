@@ -79,9 +79,8 @@ function pageChart() {
     <p class="footer-note stats-note">You are the last of the Kai. So this Action Chart autosaves</p>`;
 }
 function pageKai() {
-  return `${heading('Disciplines',`<button class="toolbar-button" data-action="mastery-dialog" aria-label="Edit Weaponskill mastery">Mastery: ${state.mastery} ✎</button>`)}
+  return `${heading(`Disciplines (${state.disciplines.length}/${C.limit(state)})`,`<button class="toolbar-button settings-control mastery-settings" data-action="mastery-dialog" aria-label="Edit Weaponskill mastery" title="Mastery: ${state.mastery}"><span>Mastery: ${state.mastery}</span>${settingsIcon}</button>`)}
     <div class="discipline-grid">${R.disciplines.map(([name])=>`<button class="discipline" aria-pressed="${state.disciplines.includes(name)}" aria-haspopup="dialog" aria-describedby="discipline-hint" data-action="discipline" data-name="${name}"><span class="check" aria-hidden="true">✓</span>${name}</button>`).join('')}</div>
-    <p class="selection-summary"><span>${state.disciplines.length} of ${C.limit(state)} selected</span><span>${state.disciplines.length===C.limit(state)?'Skills ready':`Choose ${C.limit(state)-state.disciplines.length} more`}</span></p>
     <p class="gesture-hint" id="discipline-hint">Tap to read · Hold to select or remove</p>
     <p class="footer-note">Mindblast and equipped Weaponskill bonuses apply in combat.<br>Use Healing once per section without combat.</p>`;
 }
@@ -129,7 +128,7 @@ function pageJournal() {
 function render() {
   cancelDisciplinePress(true);
   $('#book-button').textContent = `${String(state.book).padStart(2,'0')} / ${C.books[state.book].title} ▾`;
-  $('#section-bookmark').textContent = `Section ${state.section} ✎`;
+  $('#section-bookmark').innerHTML = `<span>Section ${state.section}</span>${settingsIcon}`;
   $('#section-bookmark').ariaLabel = `Edit section bookmark, section ${state.section}`;
   $('#main').ariaLabel = view==='chart'?'Stats':view==='kai'?'Kai Disciplines':view==='gear'?'Backpack':view==='special'?'Special Items':view[0].toUpperCase()+view.slice(1);
   $('#main').dataset.view = view;
