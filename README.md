@@ -23,18 +23,18 @@ The original downloaded books are excluded from Git and deployment. The app link
 
 ## Included
 
-- Five bottom navigation buttons: Stats, Kai, Gear, Combat, and Journal.
+- Six bottom navigation buttons: Stats, Kai, Backpack, Special, Combat, and Journal.
 - Book switcher, independent book charts, and Book 1 → Book 2 character carryover with a sixth Discipline and Royal Armoury setup.
 - Editable scores, current endurance, gold, Meals, and section bookmark.
-- Compact shared book/section navigation. The bookmark is editable from every tab. Stats shows Lone Wolf and Undo, with a weapon selector inside Combat Skill; Kai offers Weaponskill mastery with the selection count below the grid; Gear offers capacity and Add; Journal offers Rules and Export beside the title.
+- Compact shared book/section navigation. The bookmark is editable from every tab. Stats shows Lone Wolf and Undo, with a weapon dialog button inside Combat Skill; Kai offers Weaponskill mastery with the selection count below the grid; Backpack shows all eight slots; Special offers capacity and Add; Journal offers Rules and Export beside the title.
 - Tap a Kai Discipline to read its description without changing selection. Hold for about half a second, then release to select or remove it; a gold progress line confirms the hold. Moving your finger or cancelling the gesture prevents selection. The description also has a Select/Remove button for keyboard, screen-reader, and ordinary tap use. Five/six-skill limits and Undo still apply.
 - New-adventure setup: random scores, starting gold, found equipment, and Weaponskill mastery. Choose five disciplines in the Kai view.
 - Two weapons, eight backpack slots including Meals, and a usual pouch limit of 50 Gold Crowns (totals can exceed it); Special Items are separate. Long inventory and combat lists are paginated.
-- Tap the weapon beside Combat Skill on Stats to manage both regular weapon slots, equip a weapon, or fight unarmed. Empty slots open Add a weapon. A carried Sommerswerd can also be equipped here without taking a regular slot. Weapons have moved out of Gear; Gear now has Backpack and Special tabs.
-- All eight backpack slots remain visible, including empty slots. Tap a filled slot to see its item details, or an empty slot to add supplies. Special Items have an Add space rather than a fixed set of slots, because the book gives them no fixed slot limit.
+- Tap the weapon button with its gear icon beside Combat Skill on Stats to manage both regular weapon slots, equip a weapon, or fight unarmed. Empty slots open Add a weapon. A carried Sommerswerd can also be equipped here without taking a regular slot.
+- Backpack shows a single column of eight rows, including empty slots. Filled rows have item controls; tap an empty row to add supplies. Special Items have their own bottom tab and an Add space rather than a fixed set of slots, because the book gives them no fixed slot limit.
 - Mindblast, mastered equipped weapon, unarmed penalty, and configurable section combat skill modifier.
 - Exact Kai combat table shared by Books 1 and 2, one round at a time. Random or manually selected numbers, instant-kill results, and evasion when permitted by the book. The combat header shows the enemy and current round; tap **Log** to open a paginated history, including each round's ratio and losses.
-- Shield adds 2 CS. Add the Sommerswerd using **Gear → Special → Add Special Item → Known item**, then equip it from Special Items. It adds 8 CS plus sword Weaponskill (+2 for Short Sword, Sword, or Broadsword). Tick **Undead enemy** when starting combat to double enemy endurance loss. It uses no regular weapon or backpack slot.
+- Shield adds 2 CS. Add the Sommerswerd using **Special → Add Special Item → Known item**, then equip it from Special Items or the Stats weapon dialog. It adds 8 CS plus sword Weaponskill (+2 for Short Sword, Sword, or Broadsword). Tick **Undead enemy** when starting combat to double enemy endurance loss. It uses no regular weapon or backpack slot.
 - Manual Healing, Meals, Healing Potions, and equipment endurance bonuses.
 - Meals and **Eat a Meal** share one card on Stats. Tap the Meal count to open the Backpack; eating is available on Stats only. Apply Healing with the Endurance **+** button, which remains visible on compact phone screens.
 - Automatic browser storage, JSON export/import, and undo for the last 30 chart changes during this session. Notes autosave as you type; text edits are not individually added to Undo.
@@ -43,7 +43,7 @@ The initial chart is an editable starter with CS 15, EP 25, an Axe, one Meal, a 
 
 ## Scope and layout
 
-This prototype supports Books 1 and 2, with a layout intended to fit ordinary portrait phone screens without page scrolling. Equipment details use one, two, or three items per page, depending on screen height, with space reserved for the backpack overview or the Special Item Add space. Combat history uses eight rounds per page in a dialog. Small landscape viewports, larger accessibility text, and dialogs can scroll when needed to keep controls reachable. No book reader is embedded. Endurance +/− controls remain available on the tested compact portrait screens; the score gear icons support larger adjustments.
+This prototype supports Books 1 and 2, with a layout intended to fit ordinary portrait phone screens without page scrolling. All eight backpack rows fit on the tested portrait screens, with touch targets at least 44 pixels tall. Special Items use one, two, or three items per page, depending on screen height. Combat history uses eight rounds per page in a dialog. Small landscape viewports, larger accessibility text, and dialogs can scroll when needed to keep controls reachable. No book reader is embedded. Endurance +/− controls remain available on the tested compact portrait screens; the score gear icons support larger adjustments.
 
 Follow the book for exceptions. Healing is applied manually once per numbered section without combat. Sommerswerd undead damage is automated; other unusual combat effects, custom potions, and section-specific losses require manual score adjustments. Books 3 onward are not implemented. The app runs without network calls once loaded, but it does not yet provide an installable/offline PWA cache.
 

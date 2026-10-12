@@ -56,19 +56,21 @@ const icons = {
   chart:'<path d="M5 3h14v18H5zM9 7h6M9 11h6M9 15h3"/>',
   kai:'<path d="m12 2 3 7 7 3-7 3-3 7-3-7-7-3 7-3z"/>',
   gear:'<path d="M7 7V5a5 5 0 0 1 10 0v2M5 7h14l1 14H4zM8 12h8v6H8z"/>',
+  special:'<path d="m12 3 3 6 6 3-6 3-3 6-3-6-6-3 6-3zM19 2v4M17 4h4"/>',
   combat:'<path d="m4 3 13 13M3 4l1 4 4-4-4-1zM14 18l4-4M16 17l4 4M20 3 3 20M16 4l4-1-1 4M3 21l4-4M5 14l5 5"/>',
   journal:'<path d="M4 4h6a3 3 0 0 1 3 3v14a4 4 0 0 0-4-2H4zM13 7a3 3 0 0 1 3-3h4v15h-3a4 4 0 0 0-4 2"/>'
 };
 function heading(title, controls = '') { return `<div class="tab-toolbar"><h2 title="${escapeHTML(title)}">${escapeHTML(title)}</h2>${controls}</div>`; }
+const settingsIcon = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 2h4l.6 3 1.8 1 2.9-.9 2 3.5-2.3 2v2.8l2.3 2-2 3.5-2.9-.9-1.8 1-.6 3h-4l-.6-3-1.8-1-2.9.9-2-3.5 2.3-2v-2.8l-2.3-2 2-3.5 2.9.9 1.8-1z"/><circle cx="12" cy="12" r="3"/></svg>';
 function scoreSettings(label) {
-  return `<button class="text-button score-settings" data-action="stats" aria-label="Edit ${label}" title="Edit ${label}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 2h4l.6 3 1.8 1 2.9-.9 2 3.5-2.3 2v2.8l2.3 2-2 3.5-2.9-.9-1.8 1-.6 3h-4l-.6-3-1.8-1-2.9.9-2-3.5 2.3-2v-2.8l-2.3-2 2-3.5 2.9.9 1.8-1z"/><circle cx="12" cy="12" r="3"/></svg></button>`;
+  return `<button class="text-button score-settings" data-action="stats" aria-label="Edit ${label}" title="Edit ${label}">${settingsIcon}</button>`;
 }
 function pageChart() {
   const max = R.maxEndurance(state), skill = R.combatSkill(state);
   const weapon = state.equipped===-2?'Sommerswerd':state.weapons[state.equipped] || 'Unarmed (−4)';
   return `${heading('Lone Wolf',`<button class="toolbar-button" data-action="undo" ${!undoStack.length?'disabled':''}>↶ Undo</button>`)}
     <div class="grid-two">
-      <section class="card combat-skill-card"><div class="stat-top"><h3 class="card-title">Combat skill</h3>${scoreSettings('combat skill')}</div><div class="stat-value">${skill.total}</div><p class="caption">${state.baseCS} base ${signed(skill.total-state.baseCS)} bonus</p><button class="weapon-select" data-action="weapons" aria-label="Manage weapons, equipped: ${escapeHTML(weapon)}" aria-haspopup="dialog"><svg viewBox="0 0 24 24" aria-hidden="true">${icons.combat}</svg><span>${escapeHTML(weapon)}</span><span aria-hidden="true">▾</span></button></section>
+      <section class="card combat-skill-card"><div class="stat-top"><h3 class="card-title">Combat skill</h3>${scoreSettings('combat skill')}</div><div class="stat-value">${skill.total}</div><p class="caption">${state.baseCS} base ${signed(skill.total-state.baseCS)} bonus</p><button class="secondary weapon-select" data-action="weapons" aria-label="Open weapons dialog, equipped: ${escapeHTML(weapon)}" aria-haspopup="dialog"><span>${escapeHTML(weapon)}</span>${settingsIcon}</button></section>
       <section class="card endurance"><div class="stat-top"><h3 class="card-title">Endurance</h3>${scoreSettings('endurance')}</div><div class="stat-value">${state.ep}<small> / ${max}</small></div><div class="meter" role="meter" aria-label="Endurance" aria-valuemin="0" aria-valuemax="${max}" aria-valuenow="${state.ep}"><span style="width:${state.ep/max*100}%"></span></div><div class="stat-controls"><button class="square" data-action="ep" data-value="-1" aria-label="Lose one endurance" ${!state.ep?'disabled':''}>−</button><button class="square" data-action="ep" data-value="1" aria-label="Restore one endurance" ${!state.ep || state.ep===max?'disabled':''}>+</button></div></section>
     </div>
     ${state.ep === 0 ? '<div class="combat-result defeat">Your adventure has ended. Undo a mistake, or start a new adventure from the menu.</div>' : ''}
@@ -84,16 +86,16 @@ function pageKai() {
     <p class="footer-note">Mindblast and equipped Weaponskill bonuses apply in combat.<br>Use Healing once per section without combat.</p>`;
 }
 function pageGear() {
-  let entries, capacity, hint;
-  if (gearView === 'backpack') { entries = [...Array(state.meals).fill('Meal'),...state.backpack]; capacity = `${entries.length} / 8 slots`; hint = 'Meals use one slot each. Tap a filled slot for details or an empty slot to add.'; }
-  else { entries = state.special; capacity = `${entries.length} carried`; hint = 'Special Items are worn or carried separately. They do not use backpack or regular weapon slots.'; }
-  const size = gearPageSize();
+  const entries=[...Array(state.meals).fill('Meal'),...state.backpack];
+  const slots=Array.from({length:8},(_,i)=>i<entries.length?equipmentRow(entries[i],i,'backpack'):`<button class="item empty-slot" data-action="add-item" data-type="backpack" aria-label="Backpack slot ${i+1}: Empty, add item"><span class="number">${String(i+1).padStart(2,'0')}</span><span class="grow">Empty slot</span><span aria-hidden="true">＋</span></button>`).join('');
+  return `${heading('Backpack',`<span class="toolbar-status">${entries.length} / 8 slots</span>`)}<div class="inventory-list backpack-list" aria-label="Eight backpack slots">${slots}</div><p class="footer-note">Tap an empty slot to add supplies.<br>Each Meal takes one slot.</p>`;
+}
+function pageSpecial() {
+  const entries=state.special,size=specialPageSize();
   gearPage = Math.min(gearPage,Math.max(0,Math.ceil(entries.length/size)-1));
-  const items = entries.slice(gearPage*size,gearPage*size+size).map((entry,i)=>equipmentRow(entry,gearPage*size+i,gearView)).join('');
-  const addDisabled = gearView==='backpack'&&entries.length===8 || gearView==='special'&&entries.length===100;
-  const slots = gearView==='backpack'?`<div class="backpack-slots" aria-label="Eight backpack slots">${Array.from({length:8},(_,i)=>`<button class="inventory-slot ${i<entries.length?'filled':'vacant'}" data-action="${i<entries.length?'item-slot':'add-item'}" data-type="backpack" data-index="${i}" aria-label="Backpack slot ${i+1}: ${i<entries.length?escapeHTML(entries[i]):'Empty, add item'}" ${i<entries.length && Math.floor(i/size)===gearPage?'aria-current="true"':''}><span class="slot-number">${i+1}</span><span>${i<entries.length?escapeHTML(entries[i]):'+ Empty'}</span></button>`).join('')}</div>`:'';
-  const emptySpecial = gearView==='special' && !addDisabled?'<button class="item empty-slot" data-action="add-item" data-type="special"><span aria-hidden="true">＋</span><span>Add a Special Item<small>Worn or carried · no fixed slot limit</small></span></button>':'';
-  return `${heading('Equipment',`<span class="toolbar-status">${capacity}</span><button class="toolbar-button add-button" data-action="add-item" aria-label="${gearView==='backpack'?'Add a backpack item':'Add a Special Item'}" ${addDisabled?'disabled':''}>＋ Add</button>`)}<div class="segmented" aria-label="Equipment type">${[['backpack','Backpack'],['special','Special']].map(([key,title])=>`<button data-action="gear-tab" data-tab="${key}" aria-pressed="${gearView===key}">${title}</button>`).join('')}</div><p class="caption">${hint}</p>${slots}<div class="inventory-list">${items}${emptySpecial}${!items && gearView==='backpack'?'<p class="caption">Your backpack is empty. Add supplies in a free slot.</p>':''}</div>${entries.length>size?`<div class="pager"><button class="square" data-action="gear-page" data-value="-1" aria-label="Previous items" ${gearPage===0?'disabled':''}>‹</button><span>Page ${gearPage+1} of ${Math.ceil(entries.length/size)}</span><button class="square" data-action="gear-page" data-value="1" aria-label="Next items" ${gearPage+1>=Math.ceil(entries.length/size)?'disabled':''}>›</button></div>`:''}<p class="footer-note">Weapons are beside Combat Skill on Stats.<br>Discarding an item can be reversed with Undo in the menu.</p>`;
+  const items=entries.slice(gearPage*size,gearPage*size+size).map((entry,i)=>equipmentRow(entry,gearPage*size+i,'special')).join('');
+  const full=entries.length===100;
+  return `${heading('Special Items',`<span class="toolbar-status">${entries.length} carried</span><button class="toolbar-button add-button" data-action="add-item" data-type="special" aria-label="Add a Special Item" ${full?'disabled':''}>＋ Add</button>`)}<p class="caption">Worn or carried separately. These do not use backpack or regular weapon slots.</p><div class="inventory-list">${items}${!full?'<button class="item empty-slot" data-action="add-item" data-type="special"><span aria-hidden="true">＋</span><span>Add a Special Item<small>Worn or carried · no fixed slot limit</small></span></button>':''}</div>${entries.length>size?`<div class="pager"><button class="square" data-action="gear-page" data-value="-1" aria-label="Previous items" ${gearPage===0?'disabled':''}>‹</button><span>Page ${gearPage+1} of ${Math.ceil(entries.length/size)}</span><button class="square" data-action="gear-page" data-value="1" aria-label="Next items" ${gearPage+1>=Math.ceil(entries.length/size)?'disabled':''}>›</button></div>`:''}<p class="footer-note">Discarding an item can be reversed with Undo in the menu.</p>`;
 }
 function equipmentRow(entry,index,type,returnToWeapons=false) {
   const name=type==='special'?entry.name:entry;
@@ -105,7 +107,7 @@ function weaponsDialog() {
   const slots=Array.from({length:2},(_,i)=>state.weapons[i]?equipmentRow(state.weapons[i],i,'weapons',true):`<button class="item empty-slot" data-action="add-item" data-type="weapons"><span class="number">${String(i+1).padStart(2,'0')}</span><span>Empty weapon slot<small>＋ Add a weapon</small></span></button>`).join('');
   dialog('Weapons',`<div class="form-stack"><p class="caption">${state.weapons.length} / 2 regular weapon slots · equip one for combat</p><div class="inventory-list">${slots}</div>${state.special.some(v=>v.name==='Sommerswerd')?`<button class="secondary full" data-action="equip" data-index="-2" data-return="weapons">${state.equipped===-2?'✓ Equipped':'Equip'} Sommerswerd</button><p class="caption">Sommerswerd is a Special Item; it uses no regular weapon slot.</p>`:''}<button class="secondary full" data-action="unarmed" data-return="weapons">${state.equipped===-1?'✓ ':''}Fight unarmed (−4 combat skill)</button><p class="hint">Remove a weapon with ×. Undo is available on Stats.</p></div>`);
 }
-function gearPageSize() { return Math.max(1,pageSize()-1); }
+function specialPageSize() { return Math.max(1,pageSize()-1); }
 function pageSize() { return matchMedia('(max-height:660px)').matches ? 2 : matchMedia('(max-height:760px)').matches ? 3 : 4; }
 function pageCombat() {
   const c = state.combat;
@@ -129,12 +131,13 @@ function render() {
   $('#book-button').textContent = `${String(state.book).padStart(2,'0')} / ${C.books[state.book].title} ▾`;
   $('#section-bookmark').textContent = `Section ${state.section} ✎`;
   $('#section-bookmark').ariaLabel = `Edit section bookmark, section ${state.section}`;
-  $('#main').ariaLabel = view==='chart'?'Stats':view==='kai'?'Kai Disciplines':view[0].toUpperCase()+view.slice(1);
+  $('#main').ariaLabel = view==='chart'?'Stats':view==='kai'?'Kai Disciplines':view==='gear'?'Backpack':view==='special'?'Special Items':view[0].toUpperCase()+view.slice(1);
   $('#main').dataset.view = view;
-  $('#main').innerHTML = ({chart:pageChart,kai:pageKai,gear:pageGear,combat:pageCombat,journal:pageJournal})[view]();
-  $('.bottom-nav').innerHTML = Object.entries(icons).map(([key,path])=>`<button class="nav-button" data-action="view" data-view="${key}" ${view===key?'aria-current="page"':''}><svg viewBox="0 0 24 24" aria-hidden="true">${path}</svg>${key==='chart'?'Stats':key==='kai'?'Kai':key==='gear'?'Gear':key==='combat'?'Combat':'Journal'}</button>`).join('');
+  $('#main').innerHTML = ({chart:pageChart,kai:pageKai,gear:pageGear,special:pageSpecial,combat:pageCombat,journal:pageJournal})[view]();
+  const labels={chart:'Stats',kai:'Kai',gear:'Backpack',special:'Special',combat:'Combat',journal:'Journal'};
+  $('.bottom-nav').innerHTML = Object.entries(icons).map(([key,path])=>`<button class="nav-button" data-action="view" data-view="${key}" ${view===key?'aria-current="page"':''}><svg viewBox="0 0 24 24" aria-hidden="true">${path}</svg>${labels[key]}</button>`).join('');
 }
-function switchView(next) { view = next; render(); $('#main').scrollTop = 0; }
+function switchView(next) { view = next; if(next==='gear')gearView='backpack';else if(next==='special')gearView='special';render(); $('#main').scrollTop = 0; }
 function weaponOptions(selected) { return uniqueWeapons.map(w=>`<option ${w===selected?'selected':''}>${w}</option>`).join(''); }
 function dialog(title, content) {
   $('#dialog').innerHTML = `<div class="dialog-heading"><h2 id="dialog-title">${title}</h2><button class="icon-button" data-action="close-dialog" aria-label="Close dialog">×</button></div>${content}`;
@@ -274,7 +277,7 @@ function rulesDialog() {
 document.addEventListener('click',event=>{
   const button = event.target.closest('[data-action]'); if (!button || button.disabled) return;
   const action = button.dataset.action;
-  if (action==='view') { if (button.dataset.gear) {gearView=button.dataset.gear;gearPage=0;} switchView(button.dataset.view); }
+  if (action==='view') switchView(button.dataset.view);
   else if (action==='books') booksDialog();
   else if (action==='switch-book') selectBook(Number(button.dataset.book));
   else if (action==='continue-book2') book2Dialog(true);
@@ -305,8 +308,6 @@ document.addEventListener('click',event=>{
   else if (action==='toggle-discipline') {toggleDiscipline(button.dataset.name);disciplineDialog(button.dataset.name);$('#dialog [data-action="toggle-discipline"]')?.focus({preventScroll:true});}
   else if (action==='mastery-dialog') masteryDialog();
   else if (action==='roll-mastery') { const roll=randomNumber();change(s=>{s.mastery=R.weapons[roll];s.lastRoll=roll;},`Rolled ${roll}: mastery in ${R.weapons[roll]}.`); if ($('#dialog').open) masteryDialog(); }
-  else if (action==='gear-tab') {gearView=button.dataset.tab;gearPage=0;render();}
-  else if (action==='item-slot') {gearView='backpack';gearPage=Math.floor(Number(button.dataset.index)/gearPageSize());render();}
   else if (action==='gear-page') {gearPage+=Number(button.dataset.value);render();}
   else if (action==='combat-log') {roundPage=0;combatLogDialog();}
   else if (action==='round-page') {roundPage+=Number(button.dataset.value);combatLogDialog();}
@@ -379,8 +380,7 @@ document.addEventListener('submit',event=>{
     if(!name) {$('#form-error').textContent='Enter an item name, or choose Meal or Healing Potion.';return;}
     if(type==='special' && ['Shield','Sommerswerd'].includes(name) && state.special.some(v=>v.name===name)) {$('#form-error').textContent=`You already carry a ${name}.`;return;}
     if((type==='weapons'&&state.weapons.length>=2)||(type==='backpack'&&state.meals+state.backpack.length>=8)||(type==='special'&&state.special.length>=100)) {$('#form-error').textContent='No space available. Remove an item first.';return;}
-    if(type==='backpack')gearPage=Math.floor((kind==='meal'?state.meals:state.meals+state.backpack.length)/gearPageSize());
-    else if(type==='special')gearPage=Math.floor(state.special.length/gearPageSize());
+    if(type==='special')gearPage=Math.floor(state.special.length/specialPageSize());
     change(s=>{if(type==='weapons')s.weapons.push(name);else if(type==='backpack'){if(kind==='meal')s.meals++;else s.backpack.push(name);}else{const bonus=number('ep');s.special.push({name,effect:String(data.get('effect')).trim(),ep:bonus,cs:name==='Sommerswerd'?0:number('cs')});if(s.ep>0)s.ep+=bonus;}},'Item added.');closeDialog();if(type==='weapons')weaponsDialog();
   }
 });
@@ -401,7 +401,7 @@ let lastPageSize = pageSize();
 window.addEventListener('resize',()=>{
   cancelDisciplinePress(true);
   const size = pageSize();
-  if (size !== lastPageSize && !$('#dialog').open && ['gear','combat'].includes(view)) render();
+  if (size !== lastPageSize && !$('#dialog').open && ['special','combat'].includes(view)) render();
   lastPageSize = size;
 });
 render();persist();if(recoveryNotice)toast(recoveryNotice);
