@@ -23,10 +23,10 @@ The original downloaded books are excluded from Git and deployment. The app link
 
 ## Included
 
-- Five bottom navigation buttons: Chart, Kai, Gear, Combat, and Journal.
+- Five bottom navigation buttons: Stats, Kai, Gear, Combat, and Journal.
 - Book switcher, independent book charts, and Book 1 → Book 2 character carryover with a sixth Discipline and Royal Armoury setup.
 - Editable scores, current endurance, gold, Meals, and section bookmark.
-- Compact shared book/section navigation. The bookmark is editable from every tab. Chart offers skill status and Undo; Kai offers Weaponskill mastery with the selection count below the grid; Gear offers capacity and Add; Journal offers Rules and Export beside the title.
+- Compact shared book/section navigation. The bookmark is editable from every tab. Stats shows Lone Wolf and Undo; Kai offers Weaponskill mastery with the selection count below the grid; Gear offers capacity and Add; Journal offers Rules and Export beside the title.
 - Tap a Kai Discipline to read its description without changing selection. Hold for about half a second, then release to select or remove it; a gold progress line confirms the hold. Moving your finger or cancelling the gesture prevents selection. The description also has a Select/Remove button for keyboard, screen-reader, and ordinary tap use. Five/six-skill limits and Undo still apply.
 - New-adventure setup: random scores, starting gold, found equipment, and Weaponskill mastery. Choose five disciplines in the Kai view.
 - Two weapons, eight backpack slots including Meals, and a usual pouch limit of 50 Gold Crowns (totals can exceed it); Special Items are separate. Long inventory and combat lists are paginated.
@@ -34,7 +34,7 @@ The original downloaded books are excluded from Git and deployment. The app link
 - Exact Kai combat table shared by Books 1 and 2, one round at a time. Random or manually selected numbers, instant-kill results, and evasion when permitted by the book. The combat header shows the enemy and current round; tap **Log** to open a paginated history, including each round's ratio and losses.
 - Shield adds 2 CS. Add the Sommerswerd using **Gear → Special → Add Special Item → Known item**, then equip it from Special Items. It adds 8 CS plus sword Weaponskill (+2 for Short Sword, Sword, or Broadsword). Tick **Undead enemy** when starting combat to double enemy endurance loss. It uses no regular weapon or backpack slot.
 - Manual Healing, Meals, Healing Potions, and equipment endurance bonuses.
-- Meals and **Eat a Meal** share one card on Chart. Tap the Meal count to open the Backpack; eating is available on Chart only. Apply Healing with the Endurance **+** button, which remains visible on compact phone screens.
+- Meals and **Eat a Meal** share one card on Stats. Tap the Meal count to open the Backpack; eating is available on Stats only. Apply Healing with the Endurance **+** button, which remains visible on compact phone screens.
 - Automatic browser storage, JSON export/import, and undo for the last 30 chart changes during this session. Notes autosave as you type; text edits are not individually added to Undo.
 
 The initial chart is an editable starter with CS 15, EP 25, an Axe, one Meal, a Map, and a Healing Potion. Use **Menu → Start a new adventure** to roll a character. Scores and chosen disciplines can also be entered manually.
@@ -67,4 +67,4 @@ Rules were checked against `all-books-simple/en/xhtml-simple/lw/01fftd.htm` and 
 
 Inspired by [Eric's Action Chart](https://www.projectaon.org/staff/eric/lw01.htm). [Project Aon](https://www.projectaon.org/) provides the original books. Lone Wolf was created by Joe Dever. This is an unofficial fan-made prototype; it contains no book narrative or illustrations. Locally downloaded book files retain their own notices and license and are not part of this repository.
 
-Gold Crowns have +/− controls and direct editing, with /50 retained as a reference. Totals above 50 persist through reload, export/import, and Book 2 carryover. Every Chart roll jiggles and highlights the number, even for repeated results; reduced-motion settings use only a highlight. Screen readers receive a numbered roll announcement.
+Gold Crowns have +/− controls and direct editing, with /50 retained as a reference. Totals above 50 persist through reload, export/import, and Book 2 carryover. Every Stats roll jiggles and highlights the number, even for repeated results; reduced-motion settings use only a highlight. Screen readers receive a numbered roll announcement.

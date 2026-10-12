@@ -60,17 +60,20 @@ const icons = {
   journal:'<path d="M4 4h6a3 3 0 0 1 3 3v14a4 4 0 0 0-4-2H4zM13 7a3 3 0 0 1 3-3h4v15h-3a4 4 0 0 0-4 2"/>'
 };
 function heading(title, controls = '') { return `<div class="tab-toolbar"><h2 title="${escapeHTML(title)}">${escapeHTML(title)}</h2>${controls}</div>`; }
+function scoreSettings(label) {
+  return `<button class="text-button score-settings" data-action="stats" aria-label="Edit ${label}" title="Edit ${label}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 2h4l.6 3 1.8 1 2.9-.9 2 3.5-2.3 2v2.8l2.3 2-2 3.5-2.9-.9-1.8 1-.6 3h-4l-.6-3-1.8-1-2.9.9-2-3.5 2.3-2v-2.8l-2.3-2 2-3.5 2.9.9 1.8-1z"/><circle cx="12" cy="12" r="3"/></svg></button>`;
+}
 function pageChart() {
   const max = R.maxEndurance(state), skill = R.combatSkill(state);
-  return `<div class="tab-toolbar"><h2 class="sr-only">Character chart</h2><button class="toolbar-button skill-link" data-action="view" data-view="kai"><span class="skill-dots" aria-hidden="true">${Array.from({length:C.limit(state)},(_,i)=>`<i class="${i<state.disciplines.length?'filled':''}"></i>`).join('')}</span>${state.disciplines.length}/${C.limit(state)} Kai skills <span aria-hidden="true">›</span></button><button class="toolbar-button" data-action="undo" ${!undoStack.length?'disabled':''}>↶ Undo</button></div>
+  return `${heading('Lone Wolf',`<button class="toolbar-button" data-action="undo" ${!undoStack.length?'disabled':''}>↶ Undo</button>`)}
     <div class="grid-two">
-      <section class="card"><div class="stat-top"><h3 class="card-title">Combat skill</h3><button class="text-button" data-action="stats">Edit</button></div><div class="stat-value">${skill.total}</div><p class="caption">${state.baseCS} base ${signed(skill.total-state.baseCS)} bonus</p><div class="stat-controls"><span class="hint">${state.equipped===-2?'Sommerswerd':state.weapons[state.equipped] || 'Unarmed (−4)'}</span></div></section>
-      <section class="card endurance"><div class="stat-top"><h3 class="card-title">Endurance</h3><button class="text-button" data-action="stats">Edit</button></div><div class="stat-value">${state.ep}<small> / ${max}</small></div><div class="meter" role="meter" aria-label="Endurance" aria-valuemin="0" aria-valuemax="${max}" aria-valuenow="${state.ep}"><span style="width:${state.ep/max*100}%"></span></div><div class="stat-controls"><button class="square" data-action="ep" data-value="-1" aria-label="Lose one endurance" ${!state.ep?'disabled':''}>−</button><button class="square" data-action="ep" data-value="1" aria-label="Restore one endurance" ${!state.ep || state.ep===max?'disabled':''}>+</button><span class="caption">${state.ep === 0 ? 'Fallen' : 'Current'}</span></div></section>
+      <section class="card"><div class="stat-top"><h3 class="card-title">Combat skill</h3>${scoreSettings('combat skill')}</div><div class="stat-value">${skill.total}</div><p class="caption">${state.baseCS} base ${signed(skill.total-state.baseCS)} bonus</p><div class="stat-controls"><span class="hint">${state.equipped===-2?'Sommerswerd':state.weapons[state.equipped] || 'Unarmed (−4)'}</span></div></section>
+      <section class="card endurance"><div class="stat-top"><h3 class="card-title">Endurance</h3>${scoreSettings('endurance')}</div><div class="stat-value">${state.ep}<small> / ${max}</small></div><div class="meter" role="meter" aria-label="Endurance" aria-valuemin="0" aria-valuemax="${max}" aria-valuenow="${state.ep}"><span style="width:${state.ep/max*100}%"></span></div><div class="stat-controls"><button class="square" data-action="ep" data-value="-1" aria-label="Lose one endurance" ${!state.ep?'disabled':''}>−</button><button class="square" data-action="ep" data-value="1" aria-label="Restore one endurance" ${!state.ep || state.ep===max?'disabled':''}>+</button></div></section>
     </div>
     ${state.ep === 0 ? '<div class="combat-result defeat">Your adventure has ended. Undo a mistake, or start a new adventure from the menu.</div>' : ''}
     <div class="resources"><section class="card resource gold-resource" aria-label="Gold Crowns"><button class="text-button" data-action="gold"><span class="resource-icon" aria-hidden="true">◈</span><span><span class="resource-value">${state.gold} <small>/ 50</small></span><br><span class="resource-label">Gold Crowns · edit</span></span></button><div class="gold-controls"><button class="square" data-action="gold-adjust" data-value="-1" aria-label="Spend one Gold Crown" ${!state.gold?'disabled':''}>−</button><button class="square" data-action="gold-adjust" data-value="1" aria-label="Gain one Gold Crown" ${state.gold===Number.MAX_SAFE_INTEGER?'disabled':''}>+</button></div></section><section class="card resource meal-resource" aria-label="Meals"><button class="text-button" data-action="view" data-view="gear" data-gear="backpack"><span class="resource-icon" aria-hidden="true">♧</span><span><span class="resource-value">${state.meals}</span><br><span class="resource-label">Meals · Backpack ›</span></span></button><button class="secondary meal-eat" data-action="eat" ${!state.ep?'disabled':''}>Eat a Meal</button></section></div>
     <section class="card random"><div><h3 class="card-title">Random number</h3><p class="caption">0–9 · zero counts as zero</p></div><strong class="die" aria-hidden="true">${state.lastRoll ?? '—'}</strong><span id="roll-status" class="sr-only" role="status" aria-live="polite"></span><button class="secondary" data-action="roll">Roll</button></section>
-    <p class="footer-note">Keep the book beside you. Your chart remembers the rest.</p>`;
+    <p class="footer-note stats-note">You are the last of the Kai. So this Action Chart autosaves</p>`;
 }
 function pageKai() {
   return `${heading('Disciplines',`<button class="toolbar-button" data-action="mastery-dialog" aria-label="Edit Weaponskill mastery">Mastery: ${state.mastery} ✎</button>`)}
@@ -118,10 +121,10 @@ function render() {
   $('#book-button').textContent = `${String(state.book).padStart(2,'0')} / ${C.books[state.book].title} ▾`;
   $('#section-bookmark').textContent = `Section ${state.section} ✎`;
   $('#section-bookmark').ariaLabel = `Edit section bookmark, section ${state.section}`;
-  $('#main').ariaLabel = view==='kai'?'Kai Disciplines':view[0].toUpperCase()+view.slice(1);
+  $('#main').ariaLabel = view==='chart'?'Stats':view==='kai'?'Kai Disciplines':view[0].toUpperCase()+view.slice(1);
   $('#main').dataset.view = view;
   $('#main').innerHTML = ({chart:pageChart,kai:pageKai,gear:pageGear,combat:pageCombat,journal:pageJournal})[view]();
-  $('.bottom-nav').innerHTML = Object.entries(icons).map(([key,path])=>`<button class="nav-button" data-action="view" data-view="${key}" ${view===key?'aria-current="page"':''}><svg viewBox="0 0 24 24" aria-hidden="true">${path}</svg>${key==='chart'?'Chart':key==='kai'?'Kai':key==='gear'?'Gear':key==='combat'?'Combat':'Journal'}</button>`).join('');
+  $('.bottom-nav').innerHTML = Object.entries(icons).map(([key,path])=>`<button class="nav-button" data-action="view" data-view="${key}" ${view===key?'aria-current="page"':''}><svg viewBox="0 0 24 24" aria-hidden="true">${path}</svg>${key==='chart'?'Stats':key==='kai'?'Kai':key==='gear'?'Gear':key==='combat'?'Combat':'Journal'}</button>`).join('');
 }
 function switchView(next) { view = next; render(); $('#main').scrollTop = 0; }
 function weaponOptions(selected) { return uniqueWeapons.map(w=>`<option ${w===selected?'selected':''}>${w}</option>`).join(''); }

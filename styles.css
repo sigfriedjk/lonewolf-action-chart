@@ -33,3 +33,5 @@ label{display:block;font-size:11px;font-weight:600;color:var(--muted)}input,sele
 @keyframes roll-highlight{0%,75%{background:var(--mint);color:var(--forest)}100%{background:transparent}}
 @media(prefers-reduced-motion:reduce){.random .die.rolling{animation:roll-highlight .48s ease-out}}
 @media(max-height:660px){main[data-view=chart] .gold-resource{gap:4px}}
+.score-settings{display:grid;place-items:center;min-width:44px;padding:0}.score-settings svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
+main[data-view=chart] .stats-note{display:block}
