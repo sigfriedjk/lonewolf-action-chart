@@ -1,72 +1,96 @@
-# Lone Wolf Action Chart prototype
+# Lone Wolf Action Chart
 
-A mobile-first companion for **Book 1: Flight from the Dark** and **Book 2: Fire on the Water**. Plain HTML, CSS, and JavaScript; no frameworks, build step, account, or backend.
+A mobile-first companion for **Lone Wolf Books 1–5**, written in plain HTML, CSS, and JavaScript. No framework, build step, account, backend, or dependencies.
 
-Open `index.html` in a browser, or run `node preview.js` and visit **http://127.0.0.1:4173**. The server is only for local preview. For static hosting, copy `index.html`, `styles.css`, `app.js`, `campaign.js`, and `rules.js` together.
+**Release:** [book5v1](https://github.com/sigfriedjk/lonewolf-action-chart/releases/tag/book5v1) · **Play:** [Action Chart](https://sigfriedjk.github.io/lonewolf-action-chart/index.html) · **Developer:** [HANDOFF.md](HANDOFF.md)
 
-## Moving into Book 2
+The direct `index.html` link is provided because it resolved a previously reported phone 404 at the directory URL. Saves stay on the same origin.
 
-Tap the book title below the header, then **Carry Book 1 character into Book 2**. Finish any combat and choose your five Book 1 disciplines first. Confirm that you completed the book, choose a sixth Discipline, enter or accept the royal gold roll, and choose up to two Royal Armoury items. Uncheck a carried weapon if you want to exchange it for a new one. A full backpack requires choosing other supplies or freeing space in Book 1 first; carried items are never silently discarded.
+## Run locally
 
-Your scores, current endurance, gold, weapons, backpack, Meals, Special Items, Weaponskill mastery, and journal are copied. The Seal of Hammerdal is added, royal gold is added without a cap, and the new bookmark starts at section 1. Endurance is preserved; it is not automatically refilled. New armour adds its endurance bonus. Each book then keeps an independent chart: later edits in one book do not change the other. Switching books does not grant supplies again.
+Open `index.html` in a browser, or use an existing Node runtime:
 
-Book 2 can also start with a fresh character and five disciplines. To restart the active book, use **Menu → Start a new adventure**. Undo can restore a replaced chart during the current session. Export saves both book charts together. Existing Book 1 browser saves and JSON backups migrate automatically; the original browser storage key is retained.
+```text
+node preview.js
+```
 
-## GitHub Pages
+Visit http://127.0.0.1:4173/ and stop the server with Ctrl+C. For static hosting, keep `index.html`, `styles.css`, `rules.js`, `campaign.js`, and `app.js` together. No package installation is needed.
 
-The live app is published at **https://sigfriedjk.github.io/lonewolf-action-chart/**. GitHub Pages serves the root of the `main` branch; pushing changes to that branch automatically updates the site. `.nojekyll` keeps the plain static files unchanged.
+## Using the chart
 
-The [book2v1 release](https://github.com/sigfriedjk/lonewolf-action-chart/releases/tag/book2v1) preserves the first Book 2 implementation at commit `c5c89f7`, before the compact header redesign.
-The [book2v2 release](https://github.com/sigfriedjk/lonewolf-action-chart/releases/tag/book2v2) preserves the compact layout at commit `6895e43`, before the Discipline gesture update.
+Six bottom tabs keep normal portrait phone pages compact:
 
-The original downloaded books are excluded from Git and deployment. The app links to Project Aon for reading. Export a localhost save and import it on the live site if you want to move an existing adventure there; browser storage is separate for each origin.
+- **Stats:** Combat Skill, weapon dialog, Endurance −/+, editable gear icons, Gold Crowns −/+ and direct editing, Meals/Eat a Meal, animated random rolls, and Undo. Gold keeps /50 as a reference while allowing higher totals. Every roll animates, including repeated numbers; reduced motion uses a highlight.
+- **Kai:** Tap a Discipline to read it. Hold for about half a second, then release to select/remove it; moving or cancelling prevents selection. The description has a Select/Remove button for ordinary tap, keyboard, and screen-reader access. The title shows selected/allowed, and the gear opens mastery settings.
+- **Backpack:** Eight rows, including empty slots. Meals each use a slot. Tap an empty row to add supplies; use/remove controls stay with carried items. Ordinary Healing Potion and Potion of Laumspur recover up to 4 EP after combat.
+- **Special:** Carry/Safekeeping toggle, carried-item Store buttons, and stored-item Carry buttons. Add items in Carry; longer lists are paginated. Stored items give no bonuses. Undo remains on Stats and in the menu.
+- **Combat:** Enemy scores, section CS adjustment, enemy Mindblast damage per round, immunity to your Mindblast, and undead status. Use a random or chosen 0–9 roll, evade only when the book permits it, and open Log for paginated round history. Undo restores the whole round.
+- **Journal:** Autosaved notes, Rules, and Export. Keep notes about section-specific effects, external food, and other exceptions here.
 
-## Included
+The shared book title opens book switching/setup, and the shared section gear edits the bookmark. The initial Book 1 chart is an editable starter: CS 15, EP 25, Axe, one Meal, Map, and Healing Potion. Use **Menu → Start a new adventure** for rolled setup.
 
-- Six bottom navigation buttons: Stats, Kai, Backpack, Special, Combat, and Journal.
-- Book switcher, independent book charts, and Book 1 → Book 2 character carryover with a sixth Discipline and Royal Armoury setup.
-- Editable scores, current endurance, gold, Meals, and section bookmark.
-- Compact shared book/section navigation. The bookmark is editable from every tab. Stats shows Lone Wolf and Undo, with a weapon dialog button inside Combat Skill; Kai shows its selection count in the Disciplines title and offers Weaponskill mastery; Backpack shows all eight slots; Special offers Undo beside its title, with an Add space below its items and a footer explaining how they are carried; Journal offers Rules and Export beside the title.
-- Tap a Kai Discipline to read its description without changing selection. Hold for about half a second, then release to select or remove it; a gold progress line confirms the hold. Moving your finger or cancelling the gesture prevents selection. The description also has a Select/Remove button for keyboard, screen-reader, and ordinary tap use. Five/six-skill limits and Undo still apply.
-- New-adventure setup: random scores, starting gold, found equipment, and Weaponskill mastery. Choose five disciplines in the Kai view.
-- Two weapons, eight backpack slots including Meals, and a usual pouch limit of 50 Gold Crowns (totals can exceed it); Special Items are separate. Long inventory and combat lists are paginated.
-- Tap the weapon button with its gear icon beside Combat Skill on Stats to manage both regular weapon slots, equip a weapon, or fight unarmed. Empty slots open Add a weapon. A carried Sommerswerd can also be equipped here without taking a regular slot.
-- Backpack shows a single column of eight rows, including empty slots. Filled rows have item controls; tap an empty row to add supplies. Special Items have their own bottom tab and an Add space rather than a fixed set of slots, because the book gives them no fixed slot limit.
-- Mindblast, mastered equipped weapon, unarmed penalty, and configurable section combat skill modifier.
-- Exact Kai combat table shared by Books 1 and 2, one round at a time. Random or manually selected numbers, instant-kill results, and evasion when permitted by the book. The combat header shows the enemy and current round; tap **Log** to open a paginated history, including each round's ratio and losses.
-- Shield adds 2 CS. Add the Sommerswerd using **Special → Add Special Item → Known item**, then equip it from Special Items or the Stats weapon dialog. It adds 8 CS plus sword Weaponskill (+2 for Short Sword, Sword, or Broadsword). Tick **Undead enemy** when starting combat to double enemy endurance loss. It uses no regular weapon or backpack slot.
-- Manual Healing, Meals, Healing Potions, and equipment endurance bonuses.
-- Meals and **Eat a Meal** share one card on Stats. Tap the Meal count to open the Backpack; eating is available on Stats only. Apply Healing with the Endurance **+** button, which remains visible on compact phone screens.
-- Automatic browser storage, JSON export/import, and undo for the last 30 chart changes during this session. Notes autosave as you type; text edits are not individually added to Undo.
+## Books and carryover
 
-The initial chart is an editable starter with CS 15, EP 25, an Axe, one Meal, a Map, and a Healing Potion. Use **Menu → Start a new adventure** to roll a character. Scores and chosen disciplines can also be entered manually.
+Each book keeps an independent chart. To continue, finish combat, select all available Disciplines in an earlier chart, then use the book menu's carryover action. The form names the source, requires confirmation that it was completed, and lets you learn one new Discipline. It copies scores, current wounds, mastery, gold, equipment, and notes; resets bookmark/combat; adds the destination's map/gifts and 10–19 starting Crowns; and lets you exchange weapons/take starting supplies. Opening an existing chart grants nothing again.
 
-## Scope and layout
+Sequential play gives five, six, seven, eight, and nine Disciplines in Books 1–5. Fresh starts have five; skipped adventures do not award their skills. The latest eligible earlier chart is the automatic carryover source. Restarting the active book explicitly replaces only that chart and can be undone during the session.
 
-This prototype supports Books 1 and 2, with a layout intended to fit ordinary portrait phone screens without page scrolling. All eight backpack rows fit on the tested portrait screens, with touch targets at least 44 pixels tall. Special Items use one, two, or three items per page, depending on screen height. Combat history uses eight rounds per page in a dialog. Small landscape viewports, larger accessibility text, and dialogs can scroll when needed to keep controls reachable. No book reader is embedded. Endurance +/− controls remain available on the tested compact portrait screens; the score gear icons support larger adjustments.
+| Book | Adventure | Starting supply choices | Map/gifts | Sections |
+| --- | --- | --- | --- | --- |
+| 1 | Flight from the Dark | Monastery item plus basic kit | Map of Sommerlund | 350 |
+| 2 | Fire on the Water | Up to 2 Royal Armoury choices | Map of Sommerlund, Seal of Hammerdal | 350 |
+| 3 | The Caverns of Kalte | Up to 2 choices | Map of Kalte | 350 |
+| 4 | The Chasm of Doom | Up to 6 choices | Map of the Southlands, Badge of Rank | 350 |
+| 5 | Shadow on the Sand | Up to 4 choices | Map of Vassagonia | 400 |
 
-Follow the book for exceptions. Healing is applied manually once per numbered section without combat. Sommerswerd undead damage is automated; other unusual combat effects, custom potions, and section-specific losses require manual score adjustments. Books 3 onward are not implemented. The app runs without network calls once loaded, but it does not yet provide an installable/offline PWA cache.
+Supply selectors are optional: leave unused ones at No item. Different choices are required. Listed ration/potion bundles expand into individual Meals/doses. Duplicate or capacity errors preserve the form and existing charts. Regular weapons are limited to two, backpack contents to eight including every Meal/dose; supplies are never silently discarded. New armour adjusts current/max EP by its bonus without healing prior wounds.
 
-Saves belong to the browser and origin (a local file, localhost, and a hosted domain have separate storage). Export before switching devices or clearing browser data. The app reports unavailable browser storage and offers export. Import validates the save format and asks before replacing the chart. If stored data is invalid, the app shows a recovery message and creates a starter chart.
+## Safekeeping and combat effects
 
-## Verification
+On Special, **Store** moves an item to safekeeping; **Carry** retrieves it. Storage is available on all charts, for use when the book permits it. Stored items remain in saves/export and are unaffected when carried items are discarded. Moving armour preserves wounds; storage that would reduce a living hero to zero EP is blocked. Retrieval cannot revive a dead hero. Storing an equipped Sommerswerd unequips it; retrieval does not automatically equip it. Moves are blocked during active combat.
 
-Run `node tests/rules.test.js`, `node tests/campaign.test.js`, `node tests/app-save.test.js`, and `node tests/disciplines.test.js`. Tests compare all 130 combat cells and paired ratio boundaries, check Book 2 table parity when its local XHTML is available, and exercise Shield, Sommerswerd, sword masteries, undead damage, evasion, and instant kills. Campaign tests cover legacy migration, independent book saves, carryover, sixth Discipline, armoury exchanges, capacity checks, gold above 50, and invalid imports. App tests exercise browser storage migration and undo across books. Gesture tests cover read-only taps, held releases, ghost-click suppression, movement/cancellation, keyboard selection, and five/six-skill limits. Syntax checks: `node --check app.js`, `node --check campaign.js`, and `node --check rules.js`.
+Mindblast gives +2 CS unless the enemy is immune. **Enemy Mindblast** is a separate EP-per-round amount supplied by the encounter; zero means none. Mindshield blocks it. Otherwise it is added to table losses, including evasion, and capped at current EP. Results/history identify its portion within total hero loss. One-off mental attacks use Endurance −/+.
 
-Browser verification covered 390×844, 375×667, and 320×568 portrait layouts, the book's combat example, round undo, evasion, a full backpack and pagination, new-adventure setup, persistence after reload, and JSON export/import. All five starter tabs fit without scrolling at the tested portrait sizes. The browser reported no console warnings or errors. `prototype-phone.png` shows the Chart at 390×844.
+Shield adds 2 CS while carried. Equip the Sommerswerd from Special or the Stats weapon dialog for +8 CS; applicable sword Weaponskill adds +2. Undead enemy EP losses double. Unarmed combat subtracts 4 CS. The Special Items known-item selector provides Shield/Sommerswerd; custom EP/CS effects are supported.
 
-Book 2 verification covered carryover, switching back to the untouched Book 1 bookmark and journal, persistence after reload, fresh character setup, two-book JSON export/import, Sommerswerd equipment, undead damage, combat Undo, and all five tabs (including the combat setup form) at the same three phone sizes.
+Apply Healing manually once per numbered section without combat, using Endurance +. Book 3 Hunting does not provide Meals in Kalte: Eat a Meal consumes a carried ration or loses 3 EP if none exists. When a section supplies ice-sledge/external food, leave backpack Meals alone. Book 4's Wildlands/mines and Book 5's desert Hunting restrictions remain section-directed through Meal required. Other unusual potions, partial immunities, and encounter effects use existing manual controls and Journal.
 
-Compact header verification covered the shared bookmark, Chart Undo, Gear Add, Journal character count, and paginated combat history. All five tabs fit at 390×844, 375×667, and 320×568, including an active nine-round combat record. No dependencies were added.
+## Saves and limits
 
-Discipline verification covered real 750 ms pointer holds for selection and removal, quick taps, keyboard Enter, explicit dialog selection, full-skill limits, and a quick tap immediately after a hold. The grid, hint, and description dialogs fit the same three phone sizes without scrolling or horizontal overflow.
+Changes autosave in this browser. **Export** saves every book chart, including safekeeping. **Import** previews and validates a file before replacing the campaign and can be undone during the session. Legacy Book 1/2 saves migrate; the old storage key is retained. Undo keeps 30 campaign changes during the current session; reload clears Undo, and individual note edits do not create entries.
 
-Meal card verification covered eating, Hunting exceptions, immediate count updates, Undo, and opening the Backpack from the count. Both book charts fit the three tested portrait sizes with Endurance +/− visible and no Eat button in Gear.
+Saves belong to the browser/origin. Local files, localhost, and production have separate storage. Export/import to change devices or origins. If storage is unavailable the app asks you to export; invalid stored data triggers a recovery notice and an editable starter chart. Older app releases cannot read later-book saves, so export before testing rollback.
+
+Books 6 onward, a book reader, cloud sync/accounts, and a PWA/offline cache are outside this release. Once loaded, the chart makes no network calls. Ordinary portrait layouts were checked at 390×844, 375×667, and 320×568; dialogs, landscape/small viewports, or enlarged text may scroll to keep controls reachable. Special lists and combat history use pagination. The 100 combined carried/stored Special Item records are a software safeguard rather than a game slot limit.
+
+## Verify and continue development
+
+Node 24 was used; no dependencies are required. Run from the repository root:
+
+```text
+node --check app.js
+node --check campaign.js
+node --check rules.js
+node tests/rules.test.js
+node tests/campaign.test.js
+node tests/app-save.test.js
+node tests/disciplines.test.js
+node tests/books3-5.test.js
+git diff --check
+```
+
+Tests cover combat table/bonuses, carryover and saves, full starting supplies, gesture cancellation, safekeeping, Mindblast/Mindshield, equipment limits, and Undo. They run without the ignored source downloads using a tracked combat-table fixture; extra Book 2–5 source comparisons run when local XHTML exists. Browser verification and source details are in [BOOKS3-5-REVIEW.md](BOOKS3-5-REVIEW.md). Physical-phone testing was not performed for this release.
+
+Read [HANDOFF.md](HANDOFF.md) for architecture, save schema, invariants, known limitations, deployment, and next-book guidance. [AGENTS.md](AGENTS.md) gives concise repository instructions. Other optional proposals were set aside by Jon and are not pending requirements.
+
+## Releases and deployment
+
+GitHub Pages publishes the root of `main`; `.nojekyll` keeps the static assets unchanged. Updates to main deploy automatically. Browser asset changes require fresh query versions in `index.html`. The repository excludes downloaded books, adventure backups, temporary files, and dependencies.
+
+[CHANGELOG.md](CHANGELOG.md) records release checkpoints: `book2v1`, `book2v2`, `book2v3`, `book2v4`, and `book5v1`. Use immutable tags when reviewing or handing off a known version.
 
 ## Sources
 
-Rules were checked against `all-books-simple/en/xhtml-simple/lw/01fftd.htm` and `02fotw.htm`, especially Game Rules, Kai Disciplines, Equipment, Combat Rules, and Combat Results Table. Book 2 sections 79 and 242 and their footnotes describe the Sommerswerd.
+Rules were checked against local Project Aon `01fftd.htm`, `02fotw.htm`, `03tcok.htm`, `04tcod.htm`, and `05sots.htm` (Game Rules, Disciplines, Equipment, Combat Rules/Table). The current official Book 5 table image corrects one discrepancy in the downloaded simple edition; the review documents that correction.
 
-Inspired by [Eric's Action Chart](https://www.projectaon.org/staff/eric/lw01.htm). [Project Aon](https://www.projectaon.org/) provides the original books. Lone Wolf was created by Joe Dever. This is an unofficial fan-made prototype; it contains no book narrative or illustrations. Locally downloaded book files retain their own notices and license and are not part of this repository.
-
-Gold Crowns have +/− controls and direct editing, with /50 retained as a reference. Totals above 50 persist through reload, export/import, and Book 2 carryover. Every Stats roll jiggles and highlights the number, even for repeated results; reduced-motion settings use only a highlight. Screen readers receive a numbered roll announcement.
+Inspired by [Eric's Action Chart](https://www.projectaon.org/staff/eric/lw01.htm). [Project Aon](https://www.projectaon.org/) provides the original books. Lone Wolf was created by Joe Dever. This unofficial fan project bundles no narrative text or illustrations. Local reference downloads retain their own notices/license and are excluded from Git and deployment.
