@@ -1,6 +1,21 @@
-# Developer handoff — book5v1
+# Developer handoff — Book 6 local implementation
 
 Start with this file, [README.md](README.md), and [BOOKS3-5-REVIEW.md](BOOKS3-5-REVIEW.md). The release supports Lone Wolf Books 1–5, including full starting supplies for Books 4/5, Special Item safekeeping, and enemy Mindblast damage. Release date: 13 October 2026.
+
+**Current development work:** Jon approved implementing Book 6, plus four manually checked Lore-circle bonuses with readiness highlighting and an editable arrow total beside Gold. The compact layout was explicitly approved. The implementation is unreleased; the published checkpoint below remains `book5v1`. Read [BOOK6-REVIEW.md](BOOK6-REVIEW.md) for actual behavior, exact source anchors, save migration, and verification. Books 7 onward and release/publishing still require their own scope.
+
+## Cloud-machine handoff — 15 October 2026
+
+Jon requested committing and pushing all current development, including plans, for continuation on a cloud machine. The handoff branch is **`codex/book6-cloud-handoff`**, based on `main` at `12c2297f9d1da30859dad99396ed725a423a85a6`. Use this branch rather than `main` to obtain Book 6 and the plans. Main publishes automatically to GitHub Pages and was deliberately left unchanged; no new release tag was created.
+
+```text
+git clone --branch codex/book6-cloud-handoff https://github.com/sigfriedjk/lonewolf-action-chart.git
+cd lonewolf-action-chart
+```
+
+Read this handoff, README, BOOKS3-5-REVIEW, BOOK6-REVIEW, and BOOKS6-20-PLAN. All code, six test suites, planning/review documents, and AGENTS instructions are in Git. Use an available Node runtime; no dependency installation or build is required. The six Node suites, three syntax checks, and whitespace checks passed again on 15 October. Browser QA evidence below/in the Book 6 review belongs to the earlier local session; it was not repeated for this handoff.
+
+Ignored Project Aon book downloads, browser adventure saves, and temporary screenshots are not part of the repository. Tests run without the downloads, with source comparisons explicitly optional. Browser saves stay on their original browser/origin; export/import through the app if a playthrough must move to another origin or machine. No credentials or adventure backups belong in Git.
 
 - Repository: https://github.com/sigfriedjk/lonewolf-action-chart
 - Release checkpoint: https://github.com/sigfriedjk/lonewolf-action-chart/releases/tag/book5v1
@@ -9,11 +24,13 @@ Start with this file, [README.md](README.md), and [BOOKS3-5-REVIEW.md](BOOKS3-5-
 
 ## Product constraints and accepted scope
 
+**Current direction — 14 October 2026:** Continue development here. The initial Books 6–20 request covered review/planning; the subsequent Book 6 proposal and compact layout have now been approved and implemented locally. Read [BOOKS6-20-PLAN.md](BOOKS6-20-PLAN.md) and [BOOK6-REVIEW.md](BOOK6-REVIEW.md) for agreed decisions and the remaining scope. The product is an electronic paper Action Chart; the player interprets and enforces the rules. Prefer editable records and manual adjustments over more automation. Existing restrictions documented below describe the released Books 1–5 behavior, not requirements to extend them. Discuss further layout or major behavior changes with Jon before implementation.
+
 This is a plain JavaScript, mobile-first Action Chart. Keep the six tabs (Stats, Kai, Backpack, Special, Combat, Journal), compact headers, and ordinary portrait layouts that fit without page scrolling. Dialogs and unusually small/landscape or enlarged-text layouts may scroll to keep controls reachable.
 
 Jon prefers no installations unless strictly required. The project has no dependencies, build step, server component, or package-manager setup. Use an existing Node runtime for preview/tests. Preserve saves and existing uncommitted work. Current instructions from Jon take precedence over these notes.
 
-The approved additions are implemented. Other optional proposals (alternative source-chart selector, external-food controls, and other encounter-effect controls) were explicitly set aside; Journal and manual score controls cover those needs. Do not revive them as unfinished requirements. Books 6 onward, a reader, accounts/cloud sync, and a PWA/offline cache are outside this release.
+The approved Book 5 additions are implemented. Other optional proposals (alternative source-chart selector, external-food controls, and other encounter-effect controls) were explicitly set aside; Journal and manual score controls cover those needs. Do not revive them as unfinished requirements. Book 6 is local work awaiting release authorization; Books 7 onward, a reader, accounts/cloud sync, and a PWA/offline cache are outside the current implementation.
 
 ## File map
 
@@ -22,8 +39,8 @@ The approved additions are implemented. Other optional proposals (alternative so
 | `index.html` | Static shell, responsive viewport, script order, cache-busting URLs. |
 | `styles.css` | Compact phone layout, height breakpoints, inventory rows, dialogs, gestures, roll animation, reduced motion. |
 | `app.js` | Rendering, dialogs, events, browser storage, Undo, import/export, navigation, UI gesture timing. |
-| `campaign.js` | Pure book setup, carryover, supplies, save validation/migration, and Special Item moves. Exposes `LWCampaign` in browser and CommonJS for tests. |
-| `rules.js` | Kai Disciplines/weapons, combat table, CS/EP calculations, potion recovery, Kalte food restriction, round resolution. Exposes `LWRules`/CommonJS. |
+| `campaign.js` | Pure book setup, carryover, supplies, save validation/migration, Special Item moves, Lore-circle toggles. Exposes `LWCampaign` in browser and CommonJS for tests. |
+| `rules.js` | Kai/Magnakai Disciplines and weapons, Lore-circle arithmetic, combat table, CS/EP calculations, potion/food helpers and rounds. Exposes `LWRules`/CommonJS. |
 | `preview.js` | Optional localhost-only static server on port 4173. Serves the five app files and local source books. Never deploy as a server. |
 | `tests/` | Direct Node tests, VM browser harnesses, canonical combat-table fixture. |
 | `BOOKS3-5-REVIEW.md` | Implemented behavior, source correction, verification evidence and limitations. |
@@ -32,7 +49,9 @@ Script order is rules → campaign → app. The deployed app has no network call
 
 ## State, storage and compatibility
 
-`localStorage['lone-wolf-action-chart-v2']` stores `{version:2, activeBook, books}`. Each chart remains `version:1` and has its own scores, current EP, gold, weapons/equipped index, backpack/Meals, carried `special`, `storedSpecial`, Disciplines/mastery, section, notes, last roll, and combat. The older `lone-wolf-action-chart-v1` key is retained for migration; do not erase it.
+**Book 6 extension:** chart version 2 adds `magnakai`, `masteries`, `loreCircles`, `arrows`; existing `disciplines`/`mastery` record inherited Kai benefits. Earlier charts remain version 1. First use of Book 6 writes campaign version 3 to `lone-wolf-action-chart-v3`, retaining old keys. Load prefers v3 without silently falling back if corrupt. After upgrade, Undo and old imports continue writing v3. New records survive validation, reload, exports/imports, and Undo. See the review for limits and migration details. Book 6 entry uses player-confirmed completion without the old skill-count/EP/combat eligibility gates; selections are editable and book number grants no earned skills.
+
+**Released Books 1–5 baseline:** `localStorage['lone-wolf-action-chart-v2']` stores `{version:2, activeBook, books}`. Each earlier chart remains `version:1` and has its own scores, current EP, gold, weapons/equipped index, backpack/Meals, carried `special`, `storedSpecial`, Disciplines/mastery, section, notes, last roll, and combat. The older `lone-wolf-action-chart-v1` key is retained for migration; do not erase it. The bullets below describe that baseline, with Book 6's exceptions described above and in its review.
 
 - `validateSave` accepts a legacy single chart or a campaign, returns cleaned independent objects, and rejects malformed or unsupported data. Validation must preserve all newly added fields during round trips.
 - `completedBooks` records the completed source adventures in a character's carryover chain. The Discipline limit is five plus that history length; book number alone does not grant skills. Legacy continued Book 2 charts infer `[1]`. Fresh starts have no completed history.
@@ -71,6 +90,7 @@ node tests/campaign.test.js
 node tests/app-save.test.js
 node tests/disciplines.test.js
 node tests/books3-5.test.js
+node tests/book6.test.js
 git diff --check
 ```
 
@@ -86,4 +106,4 @@ For an authorized release: verify clean/understood worktree and remote head, run
 
 GitHub connector tools were used to publish Git objects/ref updates; the signed-in GitHub Releases page supplied tag/release creation. `gh` was unavailable and was not installed. Future developers may use their configured Git credentials/CLI instead. If connector publishing is used, include new documentation and tests, use a base tree, and check the branch's expected SHA before updating. Sync the local checkout without discarding unrelated work.
 
-No unfinished approved feature remains at `book5v1`. For a next-book integration, first verify that book's rules and save implications: the Magnakai progression must not be implemented by merely raising the Kai book-number cap. For future fixes, add focused tests for changed state transitions and verify affected phone layouts. Keep documentation current with the actual release.
+No unfinished approved feature remains at `book5v1`. Book 6 is implemented locally following the approved discussion; see [BOOK6-REVIEW.md](BOOK6-REVIEW.md). The remaining roadmap is [BOOKS6-20-PLAN.md](BOOKS6-20-PLAN.md). Before Book 7, audit its setup/training/progression individually and discuss differences that change layout or major behavior. Do not extrapolate higher-rank powers from the Book 6 selection counts. For future fixes, add focused tests for changed state transitions and verify affected phone layouts. Keep documentation clear about local implementation versus published release.

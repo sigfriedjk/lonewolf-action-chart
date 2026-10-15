@@ -1,4 +1,4 @@
-/* Kai rules, checked against Books 1–5 in the local Project Aon XHTML. */
+/* Kai and Book 6 Magnakai arithmetic, checked against local Project Aon XHTML. */
 (function (root) {
   'use strict';
   const weapons = ['Dagger', 'Spear', 'Mace', 'Short Sword', 'Warhammer', 'Sword', 'Axe', 'Sword', 'Quarterstaff', 'Broadsword'];
@@ -14,6 +14,30 @@
     ['Animal Kinship', 'Communicate with some animals and sense the intentions of others. The book offers choices where this understanding can help.'],
     ['Mind Over Matter', 'Move small objects by concentration.']
   ];
+  const magnakai = [
+    ['Weaponmastery','Gain 3 Combat Skill with a mastered melee weapon. Choose three weapon types initially in Mastery. Bow mastery adds 3 to a shot roll when the section permits; apply it yourself. Masteries do not give you weapons.'],
+    ['Animal Control','Communicate with animals, understand their intentions, and use the advantages the adventure describes when fighting from horseback.'],
+    ['Curing','Restore 1 Endurance per numbered section without combat; apply it manually on Stats. Healing and Curing do not stack. The book describes other uses, including identifying herbs and treating disease or injuries.'],
+    ['Invisibility','Blend into your surroundings, conceal your heat and scent, and adopt local speech and mannerisms. Follow the choices in the adventure.'],
+    ['Huntmastery','Find food even in wasteland and desert. The Meal helper offers to keep your ration. Follow the section for ambushes and other uses; adjust scores yourself.'],
+    ['Pathsmanship','Navigate, read languages and symbols, follow tracks, detect traps, and sense north. The adventure describes when these abilities help.'],
+    ['Psi-surge','Choose Mindblast (+2 CS, no cost) or Psi-surge (+4 CS, costing 2 EP per used round). They do not stack. This chart normally adds Mindblast +2; for surge add another +2 using Extra CS, deduct 2 EP manually each used round on Stats, and remove the extra CS when stopping. Do not use surge at 6 EP or below. Follow enemy immunity instructions.'],
+    ['Psi-screen','Protect against psychic attacks, illusions, and hypnosis as directed by the adventure. The enemy Mindblast helper treats Psi-screen as protection.'],
+    ['Nexus','Resist extremes of heat and cold and move objects through concentration. Follow the section and apply any score changes manually.'],
+    ['Divination','Sense danger, hidden enemies, intentions, and psychic abilities, and communicate telepathically when the adventure permits.']
+  ];
+  const loreCircles = [
+    {id:'fire',name:'Fire',skills:['Weaponmastery','Huntmastery'],cs:1,ep:2},
+    {id:'light',name:'Light',skills:['Animal Control','Curing'],cs:0,ep:3},
+    {id:'solaris',name:'Solaris',skills:['Invisibility','Huntmastery','Pathsmanship'],cs:1,ep:3},
+    {id:'spirit',name:'Spirit',skills:['Psi-surge','Psi-screen','Nexus','Divination'],cs:3,ep:3}
+  ];
+  const isMagnakai = s => s.book===6;
+  const disciplineList = s => isMagnakai(s) ? magnakai : disciplines;
+  const selectedDisciplines = s => isMagnakai(s) ? s.magnakai : s.disciplines;
+  const weaponTypes = s => [...new Set(isMagnakai(s) ? [...weapons,'Bow'] : weapons)];
+  const loreReady = (s,circle) => circle.skills.every(name=>s.magnakai?.includes(name));
+  const loreBonus = s => isMagnakai(s) ? loreCircles.reduce((sum,circle)=>s.loreCircles?.includes(circle.id) ? {cs:sum.cs+circle.cs,ep:sum.ep+circle.ep} : sum,{cs:0,ep:0}) : {cs:0,ep:0};
   // Rows 0–9; columns: ≤−11, −10/−9, …, 0, 1/2, …, ≥11. Enemy loss / hero loss.
   const table = [
     ['6/0','7/0','8/0','9/0','10/0','11/0','12/0','14/0','16/0','18/0','k/0','k/0','k/0'],
@@ -29,17 +53,23 @@
   ];
   const clamp = (n, lo, hi) => Math.min(hi, Math.max(lo, n));
   const potionRecovery = name => ['Healing Potion','Potion of Laumspur'].includes(name) ? 4 : 0;
-  const canHuntForMeal = s => s.book!==3 && s.disciplines.includes('Hunting');
-  const enemyMindblast = (s,c=s.combat) => s.disciplines.includes('Mindshield') ? 0 : c?.mindblastDamage || 0;
-  const maxEndurance = s => s.baseEP + s.epBonus + s.special.reduce((sum, item) => sum + item.ep, 0);
+  const canHuntForMeal = s => s.book!==3 && (s.disciplines.includes('Hunting') || Boolean(s.magnakai?.includes('Huntmastery')));
+  const psychicProtection = s => s.disciplines.includes('Mindshield') || Boolean(s.magnakai?.includes('Psi-screen'));
+  const enemyMindblast = (s,c=s.combat) => psychicProtection(s) ? 0 : c?.mindblastDamage || 0;
+  const maxEndurance = s => s.baseEP + s.epBonus + s.special.reduce((sum, item) => sum + item.ep, 0) + loreBonus(s).ep;
   function combatSkill(s, immune = false, modifier = 0) {
     const sunSword = s.equipped === -2 && s.special.some(v => v.name === 'Sommerswerd') ? 8 : 0;
     const weapon = sunSword ? 'Sommerswerd' : s.weapons[s.equipped];
-    const unarmed = weapon ? 0 : -4;
-    const mastery = weapon && (sunSword ? ['Short Sword','Sword','Broadsword'].includes(s.mastery) : weapon === s.mastery) && s.disciplines.includes('Weaponskill') ? 2 : 0;
-    const mindblast = s.disciplines.includes('Mindblast') && !immune ? 2 : 0;
+    const melee = weapon && weapon!=='Bow';
+    const unarmed = melee ? 0 : -4;
+    const matches = type => sunSword ? ['Short Sword','Sword','Broadsword'].includes(type) : weapon===type;
+    const kaiMastery = melee && matches(s.mastery) && s.disciplines.includes('Weaponskill') ? 2 : 0;
+    const higherMastery = melee && s.magnakai?.includes('Weaponmastery') && s.masteries?.some(matches) ? 3 : 0;
+    const mastery = Math.max(kaiMastery,higherMastery);
+    const mindblast = (s.disciplines.includes('Mindblast') || s.magnakai?.includes('Psi-surge')) && !immune ? 2 : 0;
+    const lore = loreBonus(s).cs;
     const equipment = s.special.reduce((sum,item) => sum + (item.cs || 0), 0);
-    return { total: s.baseCS + s.csBonus + unarmed + mastery + mindblast + modifier + equipment + sunSword, unarmed, mastery, mindblast, equipment, sunSword };
+    return { total: s.baseCS + s.csBonus + unarmed + mastery + mindblast + modifier + equipment + sunSword + lore, unarmed, mastery, mindblast, equipment, sunSword, lore };
   }
   function combatResult(ratio, roll) {
     if (!Number.isInteger(ratio) || !Number.isInteger(roll) || roll < 0 || roll > 9) throw new Error('Invalid combat input');
@@ -62,7 +92,7 @@
     c.status = s.ep === 0 ? 'defeat' : evade ? 'evaded' : c.ep === 0 ? 'victory' : 'active';
     return c.rounds.at(-1);
   }
-  const rules = { weapons, disciplines, table, clamp, potionRecovery, canHuntForMeal, enemyMindblast, maxEndurance, combatSkill, combatResult, resolveRound };
+  const rules = { weapons, disciplines, magnakai, loreCircles, isMagnakai, disciplineList, selectedDisciplines, weaponTypes, loreReady, loreBonus, psychicProtection, table, clamp, potionRecovery, canHuntForMeal, enemyMindblast, maxEndurance, combatSkill, combatResult, resolveRound };
   if (typeof module !== 'undefined') module.exports = rules;
   else root.LWRules = rules;
 })(typeof window !== 'undefined' ? window : globalThis);

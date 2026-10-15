@@ -1,0 +1,131 @@
+/* Book 6 setup, arithmetic, and real browser-handler save transitions. */
+const assert=require('node:assert/strict');
+const fs=require('node:fs');
+const vm=require('node:vm');
+const R=require('../rules.js');
+const C=require('../campaign.js');
+const clone=value=>JSON.parse(JSON.stringify(value));
+const options={cs:16,ep:24,gold:12,mastery:'Sword',items:[]};
+const fresh=()=>C.startBook(6,null,options);
+let s=fresh();
+assert.equal(s.version,2);assert.equal(C.limit(s),3);assert.deepEqual(s.disciplines,[]);
+assert.deepEqual(s.magnakai,[]);assert.deepEqual(s.completedBooks,[]);
+s=C.startBook(6,null,{...options,items:['Bow','Quiver','4 Special Rations','Rope','Tinderbox']});
+assert.deepEqual(s.weapons,['Bow']);assert.equal(s.arrows,6);assert.equal(s.meals,4);
+assert.deepEqual(s.backpack,['Rope','Tinderbox']);assert.equal(R.combatSkill(s).unarmed,-4);
+assert.ok(s.special.some(i=>i.name==='Map of the Stornlands'));
+assert.ok(s.special.some(i=>i.name==='Quiver' && i.ep===0 && i.cs===0));
+assert.equal(C.startBook(6,null,{...options,items:['Padded Leather Waistcoat']}).ep,26);
+assert.throws(()=>C.startBook(6,null,{...options,items:['Sword','Bow','Dagger']}),/two weapons/);
+assert.throws(()=>C.startBook(6,null,{...options,items:['Rope','Rope']}),/different/);
+let source=C.newCharacter(17,28,51,6,'Sword');
+source.book=5;source.disciplines=['Weaponskill','Mindblast'];source.ep=19;
+source.notes='Keep the source';source.combat={name:'Unfinished',cs:20,maxEP:30,ep:30,modifier:0,immune:false,undead:false,mindblastDamage:0,status:'active',rounds:[]};
+const before=clone(source);
+s=C.startBook(6,source,{gold:10,completed:true,items:['Padded Leather Waistcoat','Quiver']});
+assert.deepEqual(source,before);assert.equal(s.ep,21);assert.equal(R.maxEndurance(s),30);
+assert.equal(s.gold,61);assert.equal(s.combat,null);assert.equal(s.section,1);assert.equal(s.notes,source.notes);
+assert.deepEqual(s.completedBooks,[5]);assert.deepEqual(s.disciplines,source.disciplines);
+assert.throws(()=>C.startBook(6,source,{gold:10,items:[]}),/Confirm/);
+const allKai=C.startBook(6,source,{gold:10,completed:true,fullKai:true,items:[]});
+assert.deepEqual(allKai.completedBooks,[1,2,3,4,5]);assert.equal(allKai.disciplines.length,10);
+const dead={...source,ep:0,combat:null};
+assert.equal(C.startBook(6,dead,{gold:10,completed:true,items:['Padded Leather Waistcoat']}).ep,0,'Setup does not revive a dead source');
+assert.throws(()=>C.startBook(6,{...source,meals:8,backpack:[]},{gold:10,completed:true,items:['Rope']}),/backpack is full/);
+s=fresh();s.weapons=['Sword'];s.equipped=0;s.disciplines=['Weaponskill','Mindblast'];s.mastery='Sword';
+s.magnakai=['Weaponmastery','Psi-surge','Psi-screen','Huntmastery'];s.masteries=['Sword','Bow','Axe'];
+assert.equal(R.combatSkill(s).mastery,3,'Kai and Magnakai mastery do not stack');
+assert.equal(R.combatSkill(s).mindblast,2,'Psi-surge selection supplies ordinary Mindblast, not free surge');
+assert.equal(R.combatSkill(s,true).mindblast,0);
+s.masteries=['Axe'];assert.equal(R.combatSkill(s).mastery,2,'Retain inherited bonus for a different mastery');
+s.disciplines=[];assert.equal(R.combatSkill(s).mastery,0);assert.equal(R.canHuntForMeal(s),true);
+s.combat={name:'Psychic',cs:20,maxEP:30,ep:30,modifier:0,immune:false,undead:false,mindblastDamage:2,status:'active',rounds:[]};
+assert.equal(R.enemyMindblast(s),0);s.magnakai=['Psi-surge'];assert.equal(R.enemyMindblast(s),2);
+s.magnakai=['Weaponmastery'];s.masteries=['Sword'];s.special=[{name:'Sommerswerd',effect:'',ep:0,cs:0}];s.equipped=-2;
+assert.equal(R.combatSkill(s).sunSword,8);assert.equal(R.combatSkill(s).mastery,3);
+s.combat=null;const stored=C.moveSpecial(s,0,true);assert.equal(R.combatSkill(stored).sunSword,0);
+s=fresh();s.ep=19;s.magnakai=['Weaponmastery','Huntmastery'];
+assert.equal(R.loreReady(s,R.loreCircles[0]),true);
+const without=clone(s);s=C.setLoreCircle(s,'fire',true);
+assert.deepEqual(without.loreCircles,[]);assert.equal(R.maxEndurance(s),26);assert.equal(s.ep,21);
+assert.equal(R.combatSkill(s).lore,1);
+s=C.setLoreCircle(s,'fire',true);assert.equal(s.ep,21,'Repeated application grants nothing');
+s.magnakai=[];assert.equal(R.loreReady(s,R.loreCircles[0]),false);assert.equal(R.loreBonus(s).ep,2,'Checks remain player-controlled');
+s=C.setLoreCircle(s,'fire',false);assert.equal(s.ep,19);assert.equal(R.maxEndurance(s),24);
+s=C.setLoreCircle({...s,ep:0},'spirit',true);assert.equal(s.ep,0,'Circle application never revives');
+s=fresh();for(const c of R.loreCircles)s=C.setLoreCircle(s,c.id,true);
+assert.deepEqual(R.loreBonus(s),{cs:5,ep:11});assert.equal(s.ep,35);
+s.ep=1;s=C.setLoreCircle(s,'fire',false);assert.equal(s.ep,0,'Removing a bonus may reduce EP to zero');
+s=fresh();s.magnakai=R.magnakai.map(d=>d[0]);s.masteries=R.weaponTypes(s);s.disciplines=R.disciplines.map(d=>d[0]);
+s.arrows=9999;s=C.setLoreCircle(s,'light',true);s.section=350;
+const campaign={version:3,activeBook:6,books:{1:C.newCharacter(),5:source,6:s}};
+assert.deepEqual(C.validateSave(clone(campaign)),C.validateSave(campaign));
+assert.equal(C.validateSave(s).activeBook,6);
+for(const invalid of [{...s,arrows:-1},{...s,arrows:1.5},{...s,masteries:['Bow','Bow']},{...s,magnakai:['unknown']},{...s,loreCircles:['fake']},{...s,section:351},{...s,version:1}])assert.throws(()=>C.validateCharacter(invalid));
+assert.throws(()=>C.validateSave({...campaign,version:2}),/Invalid campaign/);
+const oldExtra={...C.newCharacter(),loreCircles:['spirit']};
+assert.equal(R.maxEndurance(oldExtra),25,'Magnakai fields cannot change old-book arithmetic');
+assert.throws(()=>C.validateCharacter({...oldExtra,ep:28}),/maximum/);
+s=fresh();s=C.setLoreCircle(s,'fire',true);s.ep=1;
+s.combat={name:'Last round',cs:20,maxEP:30,ep:30,modifier:0,immune:false,undead:false,mindblastDamage:0,status:'active',rounds:[]};
+s=C.setLoreCircle(s,'fire',false);assert.equal(s.ep,0);assert.equal(s.combat.status,'defeat');
+const local='all-books-simple/en/xhtml-simple/lw/06tkot.htm';
+if(fs.existsSync(local)) {
+  const table=fs.readFileSync(local,'utf8').split('<a id="crtable">')[1].split('</tbody>')[0];
+  const rows=[...table.matchAll(/<tr>([\s\S]*?)<\/tr>/g)].map(m=>({roll:Number(m[1].match(/<th scope="row">(\d)<\/th>/)?.[1]),cells:[...m[1].matchAll(/<td>([\dk]+\/[\dk]+)<\/td>/g)].map(x=>x[1])})).filter(row=>row.cells.length);
+  assert.equal(rows.length,10);for(const row of rows)assert.deepEqual(row.cells,R.table[row.roll]);
+  console.log('Optional local Book 6 comparison: all 130 combat-table cells match.');
+}
+// Minimal DOM harness: drive the same forms and listeners used in the browser.
+const legacy={version:2,activeBook:5,books:{5:source}};
+const original=JSON.stringify(C.validateSave(legacy)),storage=new Map([['lone-wolf-action-chart-v2',original]]);
+const elements=new Map(),listeners=new Map(),elementListeners=new Map();let exported;
+function element(selector){
+  if(!elements.has(selector))elements.set(selector,{dataset:{},classList:{add(){},remove(){}},addEventListener(type,fn){elementListeners.set(selector+':'+type,fn);},focus(){},close(){this.open=false;},showModal(){this.open=true;},scrollTop:0});
+  return elements.get(selector);
+}
+const context=vm.createContext({window:{LWRules:R,LWCampaign:C,addEventListener(){}},document:{querySelector:element,addEventListener(type,fn){listeners.set(type,fn);},createElement(){return {click(){}};}},localStorage:{getItem:key=>storage.get(key)??null,setItem:(key,value)=>storage.set(key,value)},crypto:{getRandomValues(values){values[0]=5;return values;}},matchMedia:()=>({matches:false}),setTimeout:()=>0,clearTimeout(){},Blob:class{constructor(parts){exported=parts.join('');}},URL:{createObjectURL:()=>'',revokeObjectURL(){}},console});
+context.FormData=class{constructor(form){this.values=form.values;}get(key){const value=this.values[key];return Array.isArray(value)?value[0]??null:value??null;}getAll(key){const value=this.values[key];return value===undefined?[]:Array.isArray(value)?value:[value];}has(key){return Object.hasOwn(this.values,key);}};
+const run=code=>vm.runInContext(code,context);
+run(fs.readFileSync(require.resolve('../app.js'),'utf8'));
+function click(action,extra={}){const button={dataset:{action,...extra},disabled:false};button.closest=()=>button;listeners.get('click')({target:button,detail:0});}
+function submit(id,values,dataset={}){listeners.get('submit')({target:{id,values,dataset},preventDefault(){}});}
+function lore(id,checked){listeners.get('change')({target:{dataset:{lore:id},checked}});}
+run('bookSetupDialog(6,true)');assert.match(element('#dialog').innerHTML,/From Book 5/);
+assert.equal((element('#dialog').innerHTML.match(/name="item\d"/g)||[]).length,5);
+submit('book2-form',{completed:'on',gold:'12',keep:['0'],item1:'Quiver',item2:'Rope',item3:'Tinderbox',item4:'Padded Leather Waistcoat',item5:'Bow'},{book:'6',source:'5',continuing:'true'});
+assert.equal(run('state.book'),6);assert.equal(run('state.arrows'),6);assert.equal(run('state.weapons.length'),2);
+assert.equal(storage.get('lone-wolf-action-chart-v2'),original,'First Book 6 write retains the previous campaign');
+assert.equal(JSON.parse(storage.get('lone-wolf-action-chart-v3')).version,3);
+click('view',{view:'kai'});click('toggle-discipline',{name:'Weaponmastery'});click('toggle-discipline',{name:'Huntmastery'});
+assert.match(element('#main').innerHTML,/lore-ready/);
+lore('fire',true);assert.equal(run('state.ep'),23);assert.equal(run('R.maxEndurance(state)'),32);
+click('view',{view:'chart'});assert.match(element('#main').innerHTML,/Arrows · edit/);
+submit('magnakai-form',{masteries:['Sword','Bow','Axe'],inherited:['Weaponskill','Mindblast'],mastery:'Sword'});
+assert.equal(run('state.masteries.length'),3);
+submit('resource-form',{amount:'3'},{key:'arrows'});assert.equal(run('state.arrows'),3);
+click('arrows');element('#resource-value').value='3';click('resource-adjust',{key:'arrows',value:'-1'});assert.equal(run('state.arrows'),2);
+click('undo');assert.equal(run('state.arrows'),3);
+const valid=run('JSON.stringify(campaign)');run('campaign=load();state=campaign.books[campaign.activeBook];render();');assert.equal(run('state.arrows'),3);assert.equal(run('state.loreCircles[0]'),'fire');
+click('export');assert.deepEqual(C.validateSave(JSON.parse(exported)),C.validateSave(JSON.parse(valid)));
+const beforeInvalid=run('JSON.stringify(campaign)');submit('resource-form',{amount:'-1'},{key:'arrows'});assert.equal(run('JSON.stringify(campaign)'),beforeInvalid);
+click('rules');assert.doesNotMatch(element('#dialog').innerHTML,/undefined/);assert.match(element('#dialog').innerHTML,/Psi-surge is manual/);
+click('switch-book',{book:'5'});assert.equal(run('state.notes'),'Keep the source');click('undo');assert.equal(run('state.book'),6);
+async function importFile(value){await elementListeners.get('#import-file:change')({target:{files:[{size:1000,text:async()=>value}],value:'file'}});}
+async function finish(){
+  const beforeBad=run('JSON.stringify(campaign)');await importFile('{"version":3}');assert.equal(run('JSON.stringify(campaign)'),beforeBad,'Invalid import never replaces campaign');
+  submit('resource-form',{amount:'11'},{key:'arrows'});await importFile(valid);elementListeners.get('#confirm-import:click')();assert.equal(run('state.arrows'),3);
+  click('undo');assert.equal(run('state.arrows'),11,'Undo restores campaign before import');
+  await importFile(original);elementListeners.get('#confirm-import:click')();assert.equal(run('state.book'),5);
+  assert.equal(JSON.parse(storage.get('lone-wolf-action-chart-v3')).activeBook,5,'Importing old format does not leave stale modern saves');
+  run('campaign=load();state=campaign.books[campaign.activeBook];');assert.equal(run('state.book'),5);
+  assert.equal(storage.get('lone-wolf-action-chart-v2'),original);
+  submit('book2-form',{cs:'16',ep:'24',gold:'12',item1:'Bow',item2:'Quiver',item3:'4 Special Rations',item4:'Rope',item5:'Tinderbox'},{book:'6',continuing:'false'});
+  assert.equal(run('state.arrows'),6);assert.equal(run('state.disciplines.length'),0);assert.equal(run('state.meals'),4);
+  const badSaved=JSON.parse(storage.get('lone-wolf-action-chart-v3'));badSaved.books[6].arrows=-1;
+  storage.set('lone-wolf-action-chart-v3',JSON.stringify(badSaved));run('campaign=load();state=campaign.books[campaign.activeBook];');
+  assert.equal(run('state.book'),1,'Corrupt modern storage does not silently load stale old progress');
+  assert.match(run('recoveryNotice'),/could not be loaded/);
+  console.log('Passed: Book 6 fresh/continued setup, inheritance, supplies, mastery, psychic protection, Lore-circles, arrows, saves, original storage, actual forms, reload, export/import and Undo.');
+}
+finish().catch(error=>{console.error(error);process.exitCode=1;});
