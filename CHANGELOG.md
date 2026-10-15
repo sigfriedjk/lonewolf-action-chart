@@ -2,6 +2,14 @@
 
 Tags are immutable snapshots; a later commit on `main` may contain further changes. Follow each release link for its exact Git commit.
 
+## [book7v1](https://github.com/sigfriedjk/lonewolf-action-chart/tree/book7v1) — 15 October 2026
+
+- Books 6–7 with independent fresh and continued charts, their own starting supplies, maps, and player-confirmed history.
+- Magnakai skills and multiple weapon masteries, editable inherited Kai benefits, manually checked Lore-circle CS/EP bonuses with readiness hints, and editable arrows.
+- Book 7 continuation preserves wounds, selections, masteries, circles, arrows, safekeeping, and notes; Primate improvements remain manual reference guidance.
+- Version 3 campaign storage retains earlier storage keys; migration, export/import, reload, and Undo preserve all seven charts.
+- Development download script for ignored Project Aon sources. All seven Node suites, local Book 2–7 source comparisons, JavaScript/shell syntax, and whitespace checks pass. See the Book 6/7 reviews for browser and source evidence.
+
 ## [book5v1](https://github.com/sigfriedjk/lonewolf-action-chart/releases/tag/book5v1) — 13 October 2026
 
 - Books 3–5, independent charts, fresh starts, character carryover, earned Discipline history, maps/gifts, starting supplies, and Book 5's 400 sections.

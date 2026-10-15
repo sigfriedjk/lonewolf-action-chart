@@ -1,4 +1,4 @@
-/* Kai and Book 6 Magnakai arithmetic, checked against local Project Aon XHTML. */
+/* Kai and Magnakai arithmetic; source audits are recorded in the book reviews. */
 (function (root) {
   'use strict';
   const weapons = ['Dagger', 'Spear', 'Mace', 'Short Sword', 'Warhammer', 'Sword', 'Axe', 'Sword', 'Quarterstaff', 'Broadsword'];
@@ -32,7 +32,15 @@
     {id:'solaris',name:'Solaris',skills:['Invisibility','Huntmastery','Pathsmanship'],cs:1,ep:3},
     {id:'spirit',name:'Spirit',skills:['Psi-surge','Psi-screen','Nexus','Divination'],cs:3,ep:3}
   ];
-  const isMagnakai = s => s.book===6;
+  const isMagnakai = s => s.book===6 || s.book===7;
+  const primateAbilities = {
+    'Animal Control':'Repel hostile animals by disrupting their senses; effectiveness depends on the animal.',
+    Curing:'Delay poison or venom while seeking a cure; this does not neutralize it.',
+    Huntmastery:'Climb without climbing aids.',
+    'Psi-surge':'Use psychic vibrations to damage objects.',
+    Nexus:'Greater resistance to harmful gases and fumes.'
+  };
+  const primateGuidance = (s,name) => s.book===7 && primateAbilities[name] ? `Primate reference (four Magnakai skills): ${primateAbilities[name]} Follow the section and your training record; apply effects manually.` : '';
   const disciplineList = s => isMagnakai(s) ? magnakai : disciplines;
   const selectedDisciplines = s => isMagnakai(s) ? s.magnakai : s.disciplines;
   const weaponTypes = s => [...new Set(isMagnakai(s) ? [...weapons,'Bow'] : weapons)];
@@ -92,7 +100,7 @@
     c.status = s.ep === 0 ? 'defeat' : evade ? 'evaded' : c.ep === 0 ? 'victory' : 'active';
     return c.rounds.at(-1);
   }
-  const rules = { weapons, disciplines, magnakai, loreCircles, isMagnakai, disciplineList, selectedDisciplines, weaponTypes, loreReady, loreBonus, psychicProtection, table, clamp, potionRecovery, canHuntForMeal, enemyMindblast, maxEndurance, combatSkill, combatResult, resolveRound };
+  const rules = { weapons, disciplines, magnakai, loreCircles, isMagnakai, primateGuidance, disciplineList, selectedDisciplines, weaponTypes, loreReady, loreBonus, psychicProtection, table, clamp, potionRecovery, canHuntForMeal, enemyMindblast, maxEndurance, combatSkill, combatResult, resolveRound };
   if (typeof module !== 'undefined') module.exports = rules;
   else root.LWRules = rules;
 })(typeof window !== 'undefined' ? window : globalThis);

@@ -1,6 +1,6 @@
 # Books 6–20 completion plan
 
-Planning review: 14 October 2026. Published release: Books 1–5 (`book5v1`). Book 6 was subsequently approved and implemented locally; it is not yet published. This plan covers Lone Wolf's original Books 1–20 arc; Books 21 onward are outside this scope. The initial documentation task did not authorize implementation/release; the later approval covers Book 6 implementation only.
+Planning review: 14 October 2026. Release checkpoint: Books 1–7 (`book7v1`, 15 October 2026). Book 6 and then Book 7 were approved and implemented. This plan covers Lone Wolf's original Books 1–20 arc; Books 21 onward are outside this scope. The initial documentation task did not authorize implementation/release; the later approval covered Book 6 implementation. The 15 October request subsequently authorized Book 7, included in the authorized `book7v1` integration; see [BOOK7-REVIEW.md](BOOK7-REVIEW.md).
 
 ## Product direction
 
@@ -85,12 +85,12 @@ Suggested review batches: 14–16, 17–18, 19–20, implemented and checked one
 
 ## Book checklist
 
-Book 6 has a completed focused audit and local implementation, documented in its review. All other rows remain **planned; detailed source audit and implementation pending**. Each needs the same source/setup/save/manual-use checks above, not merely a menu entry.
+Books 6–7 have completed focused audits and local implementations, documented in their reviews. All other rows remain **planned; detailed source audit and implementation pending**. Each needs the same source/setup/save/manual-use checks above, not merely a menu entry.
 
 | Book | Title | Local source | Milestone |
 | --- | --- | --- | --- |
-| 6 | The Kingdoms of Terror | `06tkot.htm` | Audited and implemented locally; approved Magnakai foundation; unreleased |
-| 7 | Castle Death | `07cd.htm` | Magnakai continuation |
+| 6 | The Kingdoms of Terror | `06tkot.htm` | Audited and implemented; approved Magnakai foundation; book7v1 |
+| 7 | Castle Death | `07cd.htm` | Audited and implemented; Magnakai continuation and manual Primate guidance; book7v1 |
 | 8 | The Jungle of Horrors | `08tjoh.htm` | Magnakai continuation |
 | 9 | The Cauldron of Fear | `09tcof.htm` | Magnakai continuation |
 | 10 | The Dungeons of Torgar | `10tdot.htm` | Magnakai continuation |

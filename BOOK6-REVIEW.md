@@ -1,6 +1,6 @@
 # Book 6 integration — local implementation, 14 October 2026
 
-Book 6, **The Kingdoms of Terror**, is implemented locally. No publication or release tag has been requested. The deployed checkpoint remains `book5v1` until an authorized release is verified.
+Book 6, **The Kingdoms of Terror**, is included with Book 7 in the authorized `book7v1` release of 15 October 2026. The audit and original verification below record the Book 6 implementation before that integration.
 
 ## Agreed scope
 

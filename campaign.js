@@ -1,4 +1,4 @@
-/* Save migration and Books 1–6 setup. Shared by the browser and Node tests. */
+/* Save migration and Books 1–7 setup. Shared by the browser and Node tests. */
 (function (root) {
   'use strict';
   const R = typeof module !== 'undefined' ? require('./rules.js') : root.LWRules;
@@ -10,10 +10,11 @@
     3:{title:'The Caverns of Kalte',slug:'03tcok',sections:350,supplyLimit:2,supplies:['Sword','Short Sword','Padded Leather Waistcoat','Spear','Mace','Warhammer','Axe','Potion of Laumspur','Quarterstaff','Special Rations','Broadsword'],map:'Map of Kalte',gifts:[]},
     4:{title:'The Chasm of Doom',slug:'04tcod',sections:350,supplyLimit:6,supplies:['Warhammer','Dagger','2 Potions of Laumspur','Sword','Spear','5 Special Rations','Mace','Chainmail Waistcoat','Shield'],map:'Map of the Southlands',gifts:['Badge of Rank']},
     5:{title:'Shadow on the Sand',slug:'05sots',sections:400,supplyLimit:4,supplies:['Dagger','Potion of Laumspur','Sword','Spear','2 Special Rations','Mace','Shield'],map:'Map of Vassagonia',gifts:[]},
-    6:{title:'The Kingdoms of Terror',slug:'06tkot',series:'Magnakai',sections:350,supplyLimit:5,supplies:['Sword','Potion of Laumspur','Warhammer','Bow','Quiver','4 Special Rations','Quarterstaff','Padded Leather Waistcoat','Rope','Dagger','Tinderbox','Axe'],map:'Map of the Stornlands',gifts:[]}
+    6:{title:'The Kingdoms of Terror',slug:'06tkot',series:'Magnakai',sections:350,supplyLimit:5,supplies:['Sword','Potion of Laumspur','Warhammer','Bow','Quiver','4 Special Rations','Quarterstaff','Padded Leather Waistcoat','Rope','Dagger','Tinderbox','Axe'],map:'Map of the Stornlands',gifts:[]},
+    7:{title:'Castle Death',slug:'07cd',series:'Magnakai',sections:350,supplyLimit:5,supplies:['Sword','Bow','Quiver','Rope','Potion of Laumspur','Lantern','Mace','3 Meals','Dagger','3 Fireseeds'],map:'Map of Dessi',gifts:[]}
   };
   const completed = s => s.completedBooks ?? (s.book===2 && s.continued ? [1] : []);
-  const limit = s => R.isMagnakai(s) ? 3 : 5 + completed(s).length;
+  const limit = s => R.isMagnakai(s) ? 3 + completed(s).filter(book=>book>=6).length : 5 + completed(s).length;
   const specialItemValid = v => v && typeof v.name==='string' && v.name.trim() && v.name.length<=80 && typeof v.effect==='string' && v.effect.length<=160 && Number.isInteger(v.ep) && v.ep>=0 && v.ep<=99 && Number.isInteger(v.cs) && v.cs>=0 && v.cs<=99;
   function newCharacter(cs = 15, ep = 25, gold = 0, loot = 6, mastery = 'Axe') {
     const s = {version:1,book:1,continued:false,completedBooks:[],storedSpecial:[],baseCS:cs,csBonus:0,baseEP:ep,epBonus:0,ep,gold,
@@ -58,7 +59,7 @@
         (s.equipped===-2 && !s.special.some(v=>v.name==='Sommerswerd')) ||
         !Array.isArray(s.disciplines) || s.disciplines.length>(higher?10:limit(s)) || new Set(s.disciplines).size!==s.disciplines.length ||
         !s.disciplines.every(v=>R.disciplines.some(d=>d[0]===v)) || !R.weapons.includes(s.mastery) ||
-        !(s.lastRoll===null || integer(s.lastRoll,0,9))) throw new Error('This file is not a valid Book 1–6 Action Chart.');
+        !(s.lastRoll===null || integer(s.lastRoll,0,9))) throw new Error('This file is not a valid Book 1–7 Action Chart.');
     if (s.ep>R.maxEndurance(s)) throw new Error('Endurance exceeds its maximum.');
     if (s.combat!==null) {
       const c = s.combat;
@@ -79,12 +80,12 @@
     return clean;
   }
   function validateSave(input) {
-    if (input?.version===1 || input?.version===2 && input.book===6) {
+    if (input?.version===1 || input?.version===2 && R.isMagnakai(input)) {
       const s=validateCharacter(input);
-      return {version:s.book===6?3:2,activeBook:s.book,books:{[s.book]:s}};
+      return {version:R.isMagnakai(s)?3:2,activeBook:s.book,books:{[s.book]:s}};
     }
     if (![2,3].includes(input?.version) || !Number.isInteger(input.activeBook) || !books[input.activeBook] || !input.books || typeof input.books!=='object' || Array.isArray(input.books)) throw new Error('Invalid campaign save.');
-    if (input.version===2 && Object.hasOwn(input.books,'6')) throw new Error('Invalid campaign: Book 6 requires version 3.');
+    if (input.version===2 && Object.keys(input.books).some(book=>R.isMagnakai({book:Number(book)}))) throw new Error('Invalid campaign: Magnakai charts require version 3.');
     const savedBooks={};
     for (const key of Object.keys(input.books)) {
       if (!Object.keys(books).includes(key)) throw new Error('Unsupported book in save.');
@@ -119,8 +120,8 @@
     let s;
     if (source) {
       s=validateCharacter(source);
-      if (s.book>=book || book!==6 && (s.disciplines.length!==limit(s) || !s.ep || s.combat?.status==='active')) throw new Error(`Complete Book ${s.book} with ${limit(s)===5?'five':limit(s)} Kai Disciplines and finish any combat first; continue into a later book.`);
-      if (book===6) {
+      if (s.book>=book || !R.isMagnakai({book}) && (s.disciplines.length!==limit(s) || !s.ep || s.combat?.status==='active')) throw new Error(`Complete Book ${s.book} with ${limit(s)===5?'five':limit(s)} Kai Disciplines and finish any combat first; continue into a later book.`);
+      if (R.isMagnakai({book})) {
         if (options.completed!==true) throw new Error('Confirm that you completed the source adventure.');
       } else {
         if (!R.disciplines.some(d=>d[0]===options.discipline) || s.disciplines.includes(options.discipline)) throw new Error('Choose one new Kai Discipline.');
@@ -134,10 +135,11 @@
       s.weapons=[];s.equipped=-1;s.meals=0;s.special=[];
     }
     s.book=book;s.section=1;s.combat=null;s.lastRoll=null;
-    if (book===6) {
-      s.version=2;s.magnakai=[];s.masteries=[];s.loreCircles=[];s.arrows=0;
+    if (R.isMagnakai(s)) {
+      s.version=2;
+      if (!source || !R.isMagnakai(source)) {s.magnakai=[];s.masteries=[];s.loreCircles=[];s.arrows=0;}
       if (source && options.fullKai===true) {
-        s.disciplines=R.disciplines.map(d=>d[0]);s.completedBooks=[1,2,3,4,5];
+        s.disciplines=R.disciplines.map(d=>d[0]);s.completedBooks=[...new Set([1,2,3,4,5,...s.completedBooks])].sort((a,b)=>a-b);
       }
     }
     if (!Number.isInteger(options.gold) || options.gold<10 || options.gold>19) throw new Error('Royal gold must be 10–19 Crowns.');
@@ -154,7 +156,7 @@
     s.special=s.special.filter((_,i)=>!store.includes(i));
     s.ep=Math.max(0,s.ep-stowed.reduce((sum,item)=>sum+item.ep,0));
     if (s.equipped===-2 && !s.special.some(v=>v.name==='Sommerswerd')) s.equipped=-1;
-    if (!s.ep && (book!==6 || stowed.length)) throw new Error('Storing this armour would leave you with zero Endurance. Recover before starting.');
+    if (!s.ep && (!R.isMagnakai(s) || stowed.length)) throw new Error('Storing this armour would leave you with zero Endurance. Recover before starting.');
     const keep=options.keepWeapons ?? s.weapons.map((_,i)=>i);
     if (!Array.isArray(keep) || new Set(keep).size!==keep.length || !keep.every(i=>Number.isInteger(i) && i>=0 && i<s.weapons.length)) throw new Error('Invalid weapon exchange.');
     const originalEquipped=s.equipped;
@@ -165,9 +167,13 @@
     for (const item of items) {
       if (R.weaponTypes(s).includes(item)) s.weapons.push(item);
       else if (['Two Meals','Special Rations','2 Special Rations','4 Special Rations','5 Special Rations'].includes(item)) s.meals+=item==='Special Rations'?1:item==='5 Special Rations'?5:item==='4 Special Rations'?4:2;
+      else if (item==='3 Meals') s.meals+=3;
       else if (item==='2 Potions of Laumspur') s.backpack.push('Potion of Laumspur','Potion of Laumspur');
       else if (R.potionRecovery(item)) s.backpack.push(item);
-      else if (['Rope','Tinderbox'].includes(item)) s.backpack.push(item);
+      else if (['Rope','Tinderbox','Lantern'].includes(item)) s.backpack.push(item);
+      else if (item==='3 Fireseeds') {
+        for(let i=0;i<3;i++)s.special.push({name:'Fireseed',effect:'Explosive; use and remove manually as directed by the section',ep:0,cs:0});
+      }
       else if (item==='Quiver') {
         if (!s.special.some(v=>v.name==='Quiver')) s.special.push({name:'Quiver',effect:'Slung over shoulder; arrows recorded on Stats',ep:0,cs:0});
         s.arrows+=6;
