@@ -1,16 +1,18 @@
 # Lone Wolf Action Chart
 
-A mobile-first companion for **Lone Wolf Books 1–12**, written in plain HTML, CSS, and JavaScript. No framework, build step, account, backend, or dependencies. The book12v1 release supports Books 1–12.
+A mobile-first companion for **Lone Wolf Books 1–20**, written in plain HTML, CSS, and JavaScript. No framework, build step, account, backend, or dependencies. The current main version supports Books 1–20. The previous immutable checkpoint, book12v1, supports Books 1–12.
 
-**Release:** [book12v1](https://github.com/sigfriedjk/lonewolf-action-chart/tree/book12v1) · **Play:** [Action Chart](https://sigfriedjk.github.io/lonewolf-action-chart/index.html) · **Developer:** [HANDOFF.md](HANDOFF.md)
+**Current version:** [Books 1–20 on main](https://github.com/sigfriedjk/lonewolf-action-chart/tree/main) · **Previous tag:** [book12v1](https://github.com/sigfriedjk/lonewolf-action-chart/tree/book12v1) · **Play:** [Action Chart](https://sigfriedjk.github.io/lonewolf-action-chart/index.html) · **Developer:** [HANDOFF.md](HANDOFF.md)
 
 The direct `index.html` link is provided because it resolved a previously reported phone 404 at the directory URL. Saves stay on the same origin.
 
 ## Product direction and next books
 
+Books 13–20 are integrated under the approved Grand Master approach. [Book 13](BOOK13-REVIEW.md) and the [Books 14–20 review](BOOKS14-20-REVIEW.md) record source audits, approved controls, save compatibility, and verification. Jon authorized merging and deploying this completed work on 16 October 2026. Direct live-site verification remains deferred.
+
 The goal is an electronic paper Action Chart: simple recordkeeping and useful arithmetic, with the player interpreting and enforcing the rules. The current Books 1–5 app still enforces some inventory, skill, and action limits described below; these are existing behaviors to review, not a mandate to expand rule enforcement.
 
-[BOOKS6-20-PLAN.md](BOOKS6-20-PLAN.md) records the 14 October 2026 review and remaining roadmap. Jon subsequently approved Book 6 and its compact layout; [BOOK6-REVIEW.md](BOOK6-REVIEW.md) records the Book 6 implementation. [BOOK7-REVIEW.md](BOOK7-REVIEW.md) records Book 7’s source audit and verification. Books 8–12 are included in `book12v1`; [BOOKS8-12-REVIEW.md](BOOKS8-12-REVIEW.md) records the approved choices and verification. Books 13–20 remain planned. Discuss further layout or major behavior changes before implementation. Prefer existing manual controls and Journal for adventure-specific exceptions.
+[BOOKS6-20-PLAN.md](BOOKS6-20-PLAN.md) records the 14 October 2026 review and remaining roadmap. Jon subsequently approved Book 6 and its compact layout; [BOOK6-REVIEW.md](BOOK6-REVIEW.md) records the Book 6 implementation. [BOOK7-REVIEW.md](BOOK7-REVIEW.md) records Book 7’s source audit and verification. Books 8–12 are included in `book12v1`; [BOOKS8-12-REVIEW.md](BOOKS8-12-REVIEW.md) records the approved choices and verification. Books 13–20 are included in the main integration; Book 21 is outside scope. Discuss further layout or major behavior changes before implementation. Prefer existing manual controls and Journal for adventure-specific exceptions.
 
 ## Book 6
 
@@ -38,6 +40,20 @@ For Magnakai characters, **Psychic attack** on Combat (also in the menu) lets yo
 
 **Adjusted missile roll**, in the menu or Weaponmastery dialog, adds selected Bow mastery +3, Mentora +2, and a section modifier to a rolled or entered 0–9 number. You mark off arrows yourself. **Restore 20 EP**, in the Curing dialog, applies Archmaster recovery when you press it; the chart reminds you of the conditions and leaves the 100-day limit to your record. Both support Undo.
 
+## Books 13–20
+
+Grand Master charts use the existing six tabs. Kai shows twelve Grand Master Disciplines, with four initially recommended. Mastery holds Grand weapon types, inherited Kai/Magnakai records, checked Lore-circles, and the applied advance count. Completed Grand Master adventures increase the recommendation; you select skills and apply earned advances yourself. Each applied advance adds +1 CS/+2 maximum EP and preserves wounds. Do not duplicate these in Extra CS/EP.
+
+Fresh entry uses CS 25–34 / EP 30–39, with no inherited numeric benefits selected. Continuation preserves actual scores, wounds, chosen benefits, possessions, safekeeping, and notes independently. You may explicitly confirm completed Magnakai training; no benefits are inferred from book number. Review the Special Item carryover list in setup and manage Carry/Safekeeping yourself.
+
+Selected Grand weapon types give +5 melee, replacing lower mastery. Mastery offers inherited unarmed training, Grand Master zero penalty, or Grand Crown +3; the choice replaces earlier unarmed arithmetic. Adjusted missile roll offers Grand Bow +5, replacing Magnakai Bow and Mentora. Psychic attack adds Kai-surge +8/1 EP or Grand Master Mindblast +4/0 alongside inherited choices. Bonuses replace one another. Deliverance offers Restore 20 EP, with the 8-EP/once-per-20-days reminder; you decide eligibility and track time.
+
+For Sun Lord training, explicitly check Flaming weapon in Mastery to add 1 enemy EP loss on a successful Fight round with an eligible weapon. Kai-blast in Psychic attack replaces other attacks: two entered or rolled numbers (zero = one) add 2–18 enemy EP loss alongside the normal round and cost 4 EP. The round log includes these effects within total losses.
+
+For Sun Prince training, **Fight one round with Kai-ray** in Psychic combat adds up to 15 enemy EP loss and costs up to 4 EP alongside a normal round. It replaces the other psychic attack for that round and retains your usual choice afterward. More than 10 EP and once-per-combat use are player-checked conditions. All choices/actions support Undo and saves. Other spells, time limits, section exceptions, and equipment losses remain player-directed.
+
+All ten Grand Master backpack rows remain on one page. Small phones are no longer a design requirement; smaller viewports can scroll.
+
 ## Run locally
 
 Open `index.html` in a browser, or use an existing Node runtime:
@@ -54,7 +70,7 @@ Six bottom tabs keep normal portrait phone pages compact:
 
 - **Stats:** Combat Skill, weapon dialog, Endurance −/+, editable gear icons, Gold Crowns −/+ and direct editing, Meals/Eat a Meal, animated random rolls, and Undo. Gold keeps /50 as a reference while allowing higher totals. Every roll animates, including repeated numbers; reduced motion uses a highlight.
 - **Kai:** Tap a Discipline to read it. Hold for about half a second, then release to select/remove it; moving or cancelling prevents selection. The description has a Select/Remove button for ordinary tap, keyboard, and screen-reader access. The title shows selected/allowed, and the gear opens mastery settings.
-- **Backpack:** Eight rows, including empty slots. Meals each use a slot. Tap an empty row to add supplies; use/remove controls stay with carried items. Ordinary Healing Potion and Potion of Laumspur recover up to 4 EP after combat.
+- **Backpack:** Eight rows for Books 1–12; ten for Books 13–20, on one page, including empty slots. Meals each use a slot. Tap an empty row to add supplies; use/remove controls stay with carried items. Ordinary Healing Potion and Potion of Laumspur recover up to 4 EP after combat.
 - **Special:** Carry/Safekeeping toggle, carried-item Store buttons, and stored-item Carry buttons. Add items in Carry; longer lists are paginated. Stored items give no bonuses. Undo remains on Stats and in the menu.
 - **Combat:** Enemy scores, section CS adjustment, enemy Mindblast damage per round, immunity to your Mindblast, and undead status. Use a random or chosen 0–9 roll, evade only when the book permits it, and open Log for paginated round history. Undo restores the whole round.
 - **Journal:** Autosaved notes, Rules, and Export. Keep notes about section-specific effects, external food, and other exceptions here.
@@ -81,8 +97,16 @@ Sequential play gives five, six, seven, eight, and nine Disciplines in Books 1�
 | 10 | The Dungeons of Torgar | Up to 5 choices | Map of Ghatan | 350 |
 | 11 | The Prisoners of Time | Fresh: up to 6; continued: none | Fresh: 2 Meals; no map | 350 |
 | 12 | The Masters of Darkness | Up to 6 choices | Map of the Darklands | 350 |
+| 13 | The Plague Lords of Ruel | Up to 5 choices | Map of the Dark Realm of Ruel | 350 |
+| 14 | The Captives of Kaag | Up to 5 choices | Map of the Darklands | 350 |
+| 15 | The Darke Crusade | Up to 5 choices | Map of the Western Tentarias | 350 |
+| 16 | The Legacy of Vashna | Up to 4 choices | Map of the Maakengorge | 350 |
+| 17 | The Deathlord of Ixia | Up to 4 choices | Map of Ixia and the Hardlands | 350 |
+| 18 | Dawn of the Dragons | Up to 4 choices | Map of Northern Magnamund | 350 |
+| 19 | Wolf’s Bane | Up to 4 choices | Map of Sommerlund and the Wildlands | 350 |
+| 20 | The Curse of Naar | Up to 4 choices | Map of the Planes of Existence | 350 |
 
-Supply selectors are optional: leave unused ones at No item. Different choices are required. Listed ration/potion bundles expand into individual Meals/doses. Duplicate or capacity errors preserve the form and existing charts. Regular weapons are limited to two, backpack contents to eight including every Meal/dose; supplies are never silently discarded. New armour adjusts current/max EP by its bonus without healing prior wounds.
+Supply selectors are optional: leave unused ones at No item. Different choices are required. Listed ration/potion bundles expand into individual Meals/doses. Duplicate or capacity errors preserve the form and existing charts. Regular weapons are limited to two, backpack contents to eight in Books 1–12 or ten in Books 13–20, including every Meal/dose; supplies are never silently discarded. New armour adjusts current/max EP by its bonus without healing prior wounds.
 
 ## Safekeeping and combat effects
 
@@ -96,11 +120,11 @@ Apply Healing manually once per numbered section without combat, using Endurance
 
 ## Saves and limits
 
-Changes autosave in this browser. **Export** saves every book chart, including safekeeping. **Import** previews and validates a file before replacing the campaign and can be undone during the session. Legacy Book 1/2 saves migrate; the old storage key is retained. Undo keeps 30 campaign changes during the current session; reload clears Undo, and individual note edits do not create entries.
+Changes autosave in this browser. First using a Grand Master chart upgrades to campaign v4 under a new storage key, retaining the older stored copies. Older imports and Undo continue using the newest key once upgraded; corrupt newest data does not silently load stale progress. Older app versions cannot read Grand Master exports. Export before rollback. **Export** saves every book chart, including safekeeping. **Import** previews and validates a file before replacing the campaign and can be undone during the session. Legacy Book 1/2 saves migrate; the old storage key is retained. Undo keeps 30 campaign changes during the current session; reload clears Undo, and individual note edits do not create entries.
 
 Saves belong to the browser/origin. Local files, localhost, and production have separate storage. Export/import to change devices or origins. If storage is unavailable the app asks you to export; invalid stored data triggers a recovery notice and an editable starter chart. Older app releases cannot read later-book saves, so export before testing rollback.
 
-Books 13 onward, a book reader, cloud sync/accounts, and a PWA/offline cache are outside the current implementation. Books 1–12 are included in `book12v1`. Once loaded, the chart makes no network calls. Ordinary portrait layouts were checked at 390×844, 375×667, and 320×568; dialogs, landscape/small viewports, or enlarged text may scroll to keep controls reachable. Special lists and combat history use pagination. The 100 combined carried/stored Special Item records are a software safeguard rather than a game slot limit.
+Book 21 onward, a book reader, cloud sync/accounts, and a PWA/offline cache are outside scope. The current main integration supports Books 1–20; `book12v1` remains the previous immutable checkpoint. Once loaded, the chart makes no network calls. Grand Master layouts were checked at 390×844, 430×932, and 1280×900. Small phones are no longer a design requirement; dialogs, smaller viewports, or enlarged text may scroll to keep controls reachable. Special lists and combat history use pagination. The 100 combined carried/stored Special Item records are a software safeguard rather than a game slot limit.
 
 ## Verify and continue development
 
@@ -127,10 +151,16 @@ node tests/book6.test.js
 node tests/book7.test.js
 node tests/books8-9.test.js
 node tests/books10-12.test.js
+node tests/book13.test.js
+node tests/books14-15.test.js
+node tests/book16.test.js
+node tests/books17-18.test.js
+node tests/books19-20.test.js
+bash -n scripts/download-books.sh
 git diff --check
 ```
 
-Tests cover combat table/bonuses, carryover and saves, full starting supplies, gesture cancellation, safekeeping, Mindblast/Mindshield, equipment limits, and Undo. The Book 6 suite adds Magnakai/inherited records, Lore-circles, arrows, and version 3 migration/imports. The Book 7 suite adds independent Magnakai continuation, manual progression, its supplies, seven-chart saves, and storage upgrade without Book 6. They run without the ignored source downloads using a tracked combat-table fixture; extra Book 2–12 source comparisons run when local XHTML exists. This release adds tests for all twelve charts, explicit improvements, adjusted missile rolls, psychic costs, and Curing. Browser verification and source details are in [BOOKS3-5-REVIEW.md](BOOKS3-5-REVIEW.md), [BOOK6-REVIEW.md](BOOK6-REVIEW.md), [BOOK7-REVIEW.md](BOOK7-REVIEW.md), and [BOOKS8-12-REVIEW.md](BOOKS8-12-REVIEW.md). Physical-phone testing was not performed.
+Tests cover combat table/bonuses, carryover and saves, full starting supplies, gesture cancellation, safekeeping, Mindblast/Mindshield, equipment limits, and Undo. The Book 6 suite adds Magnakai/inherited records, Lore-circles, arrows, and version 3 migration/imports. The Book 7 suite adds independent Magnakai continuation, manual progression, its supplies, seven-chart saves, and storage upgrade without Book 6. They run without the ignored source downloads using a tracked combat-table fixture; extra Book 2–20 source comparisons run when local XHTML exists. The current suites also cover all twenty charts, explicit Grand Master bonuses, one-page ten-slot capacity, v4 save retention, Kai-blast, flaming weapons, and the one-round Kai-ray action. Browser verification and source details are in [BOOKS3-5-REVIEW.md](BOOKS3-5-REVIEW.md), [BOOK6-REVIEW.md](BOOK6-REVIEW.md), [BOOK7-REVIEW.md](BOOK7-REVIEW.md), [BOOKS8-12-REVIEW.md](BOOKS8-12-REVIEW.md), [BOOK13-REVIEW.md](BOOK13-REVIEW.md), and [BOOKS14-20-REVIEW.md](BOOKS14-20-REVIEW.md). Physical-phone testing was not performed.
 
 Read [HANDOFF.md](HANDOFF.md) for architecture, save schema, invariants, known limitations, deployment, and next-book guidance. [AGENTS.md](AGENTS.md) gives concise repository instructions. Other optional proposals were set aside by Jon and are not pending requirements.
 
@@ -147,5 +177,7 @@ Rules were checked against local Project Aon `01fftd.htm`, `02fotw.htm`, `03tcok
 Book 6 was checked against local `06tkot.htm`, including its training, Lore-circle, equipment, chart/table, and footnote sections, plus the official Magnakai/Newsletter clarifications linked in its review.
 
 Book 7 was reviewed against the official single-page edition and Magnakai handbook guidance; [BOOK7-REVIEW.md](BOOK7-REVIEW.md) records the source anchors and actual verification.
+
+Books 13–20 were audited individually against the ignored Project Aon XHTML sources, including fresh/continued entry, supplies, training, combat tables, and relevant footnotes. Their reviews record deliberate player-controlled handling of section exceptions.
 
 Inspired by [Eric's Action Chart](https://www.projectaon.org/staff/eric/lw01.htm). [Project Aon](https://www.projectaon.org/) provides the original books. Lone Wolf was created by Joe Dever. This unofficial fan project bundles no narrative text or illustrations. Local reference downloads retain their own notices/license and are excluded from Git and deployment.

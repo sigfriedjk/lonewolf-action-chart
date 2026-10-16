@@ -1,8 +1,10 @@
 # Books 6–20 completion plan
 
-Planning review: 14 October 2026. Release checkpoint: Books 1–12 (`book12v1`, 16 October 2026). Book 6 and then Book 7 were approved and implemented. This plan covers Lone Wolf's original Books 1–20 arc; Books 21 onward are outside this scope. The initial documentation task did not authorize implementation/release; the later approval covered Book 6 implementation. The 15 October request subsequently authorized Book 7, included in the authorized `book7v1` integration; see [BOOK7-REVIEW.md](BOOK7-REVIEW.md).
+Planning review: 14 October 2026. Current integration: Books 1–20 on `main`; previous immutable checkpoint: Books 1–12 (`book12v1`, 16 October 2026). Book 6 and then Book 7 were approved and implemented. This plan covers Lone Wolf's original Books 1–20 arc; Books 21 onward are outside this scope. The initial documentation task did not authorize implementation/release; the later approval covered Book 6 implementation. The 15 October request subsequently authorized Book 7, included in the authorized `book7v1` integration; see [BOOK7-REVIEW.md](BOOK7-REVIEW.md).
 
 ## Product direction
+
+**16 October continuation:** Jon authorizes development through Book 20, stopping before layout or major behavior decisions. The later request authorizes merging and deploying the completed work. The clean checkout is synchronized to the exact Book 12 checkpoint. Jon approved the Book 13 foundation, keeping ten backpack slots on one page and removing small-phone design requirements, then approved Book 16's flaming-weapon and Kai-blast choices. Live verification is deferred at his request. See [BOOK13-REVIEW.md](BOOK13-REVIEW.md) and [BOOKS14-20-REVIEW.md](BOOKS14-20-REVIEW.md) for actual implementation and verification.
 
 An electronic paper Action Chart: simple, helpful, and controlled by the player. The player reads the adventure, interprets its instructions, and enforces its rules. The app records choices and can help with arithmetic; it should not become a computer game or decide what the player is allowed to do.
 
@@ -10,7 +12,7 @@ An electronic paper Action Chart: simple, helpful, and controlled by the player.
 - Do not infer encounters, elapsed time, section effects, completion, healing, meals, or skill use from a bookmark change.
 - Do not add eligibility gates, mandatory rule checks, automatic item removal, or irreversible progression as part of new book support. Book number alone must not award earned skills; distinguish printed series-entry assumptions from completed-adventure history and let the player confirm their record.
 - Preserve independent charts, browser saves, migration, export/import, safekeeping, and Undo. Copying into another book must not alter the source chart.
-- Retain the six-tab mobile-first shell and compact headers. More books should not mean more permanent controls on every page.
+- Retain the six-tab mobile-first shell and compact headers. Grand Master backpacks have ten rows on one page; small-phone fit is no longer required. More books should not mean more permanent controls on every page.
 - Keep plain HTML/CSS/JavaScript, no dependencies or build step. A reader, quest engine, spell simulator, accounts, cloud sync, and PWA are outside scope. Previously set-aside source selection, external-food, and extra encounter-effect controls remain set aside.
 
 ## Review of the existing app
@@ -49,7 +51,7 @@ Initial decisions to bring to Jon, after focused research:
 3. Whether arrows, psychic costs, and limited-use abilities need dedicated fields at all. Start with ordinary item descriptions, Journal, and manual adjustments; do not add automatic combat modes, cooldowns, or an archery simulator without agreement.
 4. Before Book 13, how to show ten backpack slots within the phone layout and record Grand Master/inherited abilities without double-counting bonuses. Present carryover restrictions as guidance for player choice, not silent deletions.
 
-The initial review left all four decisions pending. The subsequent Book 6 discussion resolved the following scope; the Grand Master transition remains pending.
+The initial review left all four decisions pending. The subsequent Book 6 discussion resolved the following scope; the later Grand Master decision is recorded below.
 
 ### Book 6 decisions agreed 14 October 2026
 
@@ -66,6 +68,14 @@ Jon approved the concrete Book 6 implementation proposal, then approved the comp
 ### Continuation decisions — 16 October 2026
 
 Jon authorized work through Book 12, stopping for layout or implementation questions. Improvements should be explicitly selected by the player and included in arithmetic, never inferred from rank/book/skill count. Approved: a Standard/Tutelary/Scion-kai selector in the existing Mastery dialog, saved and carried forward with Undo. Books 8–12 are implemented and included in the authorized `book12v1` release. See [BOOKS8-12-REVIEW.md](BOOKS8-12-REVIEW.md) for the audit and the approved missile, psychic, and healing controls. Jon approved these explicit choices/actions; no automatic rank-based improvement or cooldown simulation is added.
+
+### Grand Master decisions — 16 October 2026
+
+Jon approved the concrete Book 13 proposal: separate Grand/inherited records in the existing tabs/dialogs; four initial recommended Grand Master skills; fresh CS 25–34 / EP 30–39 without inferred inherited numeric benefits; continued scores/wounds/possessions preserved; explicit full-Magnakai confirmation; replacement mastery/Bow/psychic bonuses; Deliverance; and player-entered advances adding +1 CS/+2 max EP each.
+
+His correction supersedes backpack pagination: all ten slots remain on one page. Small phones are removed from design requirements. Live verification is deferred. New saves retain the prior stored snapshot and support validation, reload, export/import, carryover, and Undo.
+
+Jon also approved Book 16's explicit Flaming weapon check (+1 enemy EP on a successful Fight round) and Kai-blast choice (two numbers, zero = one, 2–18 enemy EP alongside the normal round, costing 4 EP and replacing other psychic attacks). The two numbers can be entered or rolled with the round. No rank-based activation or cooldown enforcement is added. Jon subsequently approved replacing the unarmed check with inherited / zero / Grand Crown +3 choices, retaining old values, and Book 20's one-round Kai-ray action (15 enemy EP / 4 EP, normal round without other psychic attacks, retaining the usual attack for later rounds).
 
 ## Delivery sequence
 
@@ -89,7 +99,7 @@ Suggested review batches: 14–16, 17–18, 19–20, implemented and checked one
 
 ## Book checklist
 
-Books 6–12 have completed focused audits and implementations, documented in their reviews. All other rows remain **planned; detailed source audit and implementation pending**. Each needs the same source/setup/save/manual-use checks above, not merely a menu entry.
+Books 6–20 have completed focused audits and local implementations, documented in their reviews. The completed integration is authorized for publication on main; Book 12 remains the previous immutable checkpoint. Each needs the same source/setup/save/manual-use checks above, not merely a menu entry.
 
 | Book | Title | Local source | Milestone |
 | --- | --- | --- | --- |
@@ -99,15 +109,15 @@ Books 6–12 have completed focused audits and implementations, documented in th
 | 9 | The Cauldron of Fear | `09tcof.htm` | Implemented; Principalin guidance; book12v1 |
 | 10 | The Dungeons of Torgar | `10tdot.htm` | Implemented; Mentora guidance, Alether supply; book12v1 |
 | 11 | The Prisoners of Time | `11tpot.htm` | Implemented; fresh/continued supplies differ; book12v1 |
-| 12 | The Masters of Darkness | `12tmod.htm` | Implemented; explicit Archmaster psychic/Curing helpers; book12v1; Book 13 transition pending |
-| 13 | The Plague Lords of Ruel | `13tplor.htm` | Grand Master foundation and discussion checkpoint |
-| 14 | The Captives of Kaag | `14tcok.htm` | Grand Master continuation |
-| 15 | The Darke Crusade | `15tdc.htm` | Grand Master continuation |
-| 16 | The Legacy of Vashna | `16tlov.htm` | Grand Master continuation |
-| 17 | The Deathlord of Ixia | `17tdoi.htm` | Grand Master continuation |
-| 18 | Dawn of the Dragons | `18dotd.htm` | Grand Master continuation |
-| 19 | Wolf's Bane | `19wb.htm` | Grand Master continuation |
-| 20 | The Curse of Naar | `20tcon.htm` | Final Books 1–20 regression review |
+| 12 | The Masters of Darkness | `12tmod.htm` | Implemented; explicit Archmaster psychic/Curing helpers; book12v1; Grand Master transition now implemented locally |
+| 13 | The Plague Lords of Ruel | `13tplor.htm` | Approved Grand Master foundation; implemented locally |
+| 14 | The Captives of Kaag | `14tcok.htm` | Audited and implemented locally; see continuation review |
+| 15 | The Darke Crusade | `15tdc.htm` | Audited and implemented locally; see continuation review |
+| 16 | The Legacy of Vashna | `16tlov.htm` | Audited and implemented locally; see continuation review |
+| 17 | The Deathlord of Ixia | `17tdoi.htm` | Audited and implemented locally; see continuation review |
+| 18 | Dawn of the Dragons | `18dotd.htm` | Audited and implemented locally; Grand Thane guidance |
+| 19 | Wolf's Bane | `19wb.htm` | Audited and implemented locally; approved unarmed choices |
+| 20 | The Curse of Naar | `20tcon.htm` | Audited and implemented locally; approved one-round Kai-ray; final regression passed |
 
 ## Completion and verification
 
@@ -117,10 +127,14 @@ Test legacy saves and new records through validation, reload, export/import, and
 
 Run focused automated tests for changed calculations and state transitions. Before any authorized release, run all five existing Node suites, any added suites, three JavaScript syntax checks, and `git diff --check` as listed in HANDOFF. Tests must remain useful without ignored downloads; report optional local-source comparisons separately.
 
-Check affected screens at 390×844, 375×667, and 320×568 using real UI actions. Verify six-tab navigation, setup dialogs, skill/mastery editing, full inventories, combat, switching, and Undo. Normal portrait pages should fit; dialogs can scroll. Do not call browser QA or physical-phone testing complete unless performed.
+Check affected screens at current phone and desktop sizes using real UI actions. Small phones are no longer a design requirement; keep the ten-slot backpack on one page. Verify six-tab navigation, setup dialogs, skill/mastery editing, full inventories, combat, switching, and Undo. Normal pages should fit at the checked current phone sizes; dialogs and smaller viewports can scroll. Do not call browser QA or physical-phone testing complete unless performed.
 
 Update README, HANDOFF, and this checklist with actual supported behavior and remaining decisions. Update asset query versions only when browser assets change. Publish/tag only on explicit release authorization, following HANDOFF; do not rewrite existing tags.
 
 ## Baseline verification for this planning review
 
 On 14 October 2026, all five current Node suites and syntax checks for `app.js`, `campaign.js`, and `rules.js` passed using existing Node 24.19.0. Optional local Book 2–5 source comparisons ran and passed. No browser/physical-phone review was performed for this documentation-only task. No runtime behavior changed.
+
+## Final local checkpoint — 16 October 2026
+
+Books 13–20 are implemented, individually source-audited, and verified. All fourteen suites pass with local Book 2–20 comparisons and without downloads; syntax/shell/whitespace checks pass. Real Chromium flows passed for every new book at 390×844, 430×932, and 1280×900, including all twenty charts in actual export/import. Ten backpack rows remain on one page. See the two Grand Master reviews for precise fields and browser coverage. Small phones are no longer a design requirement; live verification is deferred. That local checkpoint preceded publication authorization; Book 21 was not started.

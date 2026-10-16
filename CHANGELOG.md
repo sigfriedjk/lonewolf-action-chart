@@ -2,6 +2,15 @@
 
 Tags are immutable snapshots; a later commit on `main` may contain further changes. Follow each release link for its exact Git commit.
 
+## [Books 1–20 integration](https://github.com/sigfriedjk/lonewolf-action-chart/tree/main) — 16 October 2026
+
+- Books 13–20, individually source-audited, with independent fresh/continued charts, correct supplies/maps, retained wounds, possessions, safekeeping, and player-confirmed progression.
+- Separate Grand Master and inherited training, replacement weapon/Bow/psychic bonuses, explicit earned advances, Deliverance, and ten backpack rows on one page.
+- Player-selected flaming weapons and Kai-blast; inherited/zero/Grand Crown unarmed choices; one-round Kai-ray retaining the usual psychic attack afterward.
+- Campaign v4 storage retains earlier keys. All twenty charts, migration, reload, export/import, invalid-import protection, and Undo verified.
+- Fourteen Node suites pass with local Book 2–20 comparisons and without downloads. Final browser flows pass at 390×844, 430×932, and 1280×900; small-phone fit is no longer required. See [Book 13](BOOK13-REVIEW.md) and [Books 14–20](BOOKS14-20-REVIEW.md).
+- Jon authorized integration into main and deployment. Direct live-site verification remains deferred.
+
 ## [book12v1](https://github.com/sigfriedjk/lonewolf-action-chart/tree/book12v1) — 16 October 2026
 
 - Books 8–12 with independent fresh and continued charts, correct maps and supplies, preserved wounds, equipment, arrows, notes, and player-confirmed progression.

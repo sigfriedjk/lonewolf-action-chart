@@ -56,7 +56,7 @@ allBooks[6]=source;allBooks[7]=s;
 const saved=C.validateSave({version:3,activeBook:7,books:allBooks});
 assert.deepEqual(C.validateSave(clone(saved)),saved);
 assert.throws(()=>C.validateSave({version:2,activeBook:7,books:{7:s}}),/requires? version 3/);
-for(const invalid of [{...s,section:351},{...s,version:1},{...s,arrows:10000},{...s,magnakai:['fake']},{...s,masteries:['Bow','Bow']},{...s,book:13}])assert.throws(()=>C.validateCharacter(invalid));
+for(const invalid of [{...s,section:351},{...s,version:1},{...s,arrows:10000},{...s,magnakai:['fake']},{...s,masteries:['Bow','Bow']},{...s,book:21}])assert.throws(()=>C.validateCharacter(invalid));
 
 const local='all-books-simple/en/xhtml-simple/lw/07cd.htm';
 if(fs.existsSync(local)) {

@@ -1,0 +1,126 @@
+/* Grand Master transition: explicit bonuses, independent records, and v4 storage. */
+const assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm');
+const C=require('../campaign.js'),R=require('../rules.js');
+const clone=s=>JSON.parse(JSON.stringify(s));
+const opts={cs:30,ep:35,gold:24,items:[]};
+const fresh=()=>C.startBook(13,null,opts);
+let s=fresh();
+assert.equal(s.version,3);assert.equal(C.limit(s),4);assert.deepEqual(s.grandMaster,[]);
+assert.deepEqual(s.magnakai,[]);assert.deepEqual(s.disciplines,[]);assert.deepEqual(s.loreCircles,[]);
+assert.equal(s.grandAdvances,0);assert.equal(s.grandUnarmed,false);assert.equal(R.psychicEffect(s).cs,0);
+assert.equal(R.backpackLimit(s),10);assert.equal(R.backpackLimit(C.newCharacter()),8);
+assert.equal(R.combatSkill(s).unarmed,-4);assert.equal(R.maxEndurance(s),35);
+assert.equal(s.special[0].name,'Map of the Dark Realm of Ruel');
+assert.equal(R.grandMaster.length,12);assert.ok(R.grandMaster.some(d=>d[0]==='Assimilance'));
+for(const [cs,ep] of [[25,30],[34,39]])C.validateCharacter(C.startBook(13,null,{...opts,cs,ep}));
+for(const fields of [{cs:24},{cs:35},{ep:29},{ep:40},{gold:19},{gold:30}])assert.throws(()=>C.startBook(13,null,{...opts,...fields}));
+for(const item of C.books[13].supplies)C.validateCharacter(C.startBook(13,null,{...opts,items:[item]}));
+s=C.startBook(13,null,{...opts,items:['Sword','Bow','4 Meals','Rope','Potion of Laumspur']});
+assert.equal(s.meals,4);assert.equal(s.backpack.length,2);assert.equal(s.weapons.length,2);
+assert.throws(()=>C.startBook(13,null,{...opts,items:['Sword','Axe','Spear']}),/two weapons/);
+assert.throws(()=>C.startBook(13,null,{...opts,items:['Rope','Rope']}),/different/);
+let src=C.startBook(12,null,{cs:17,ep:26,gold:12,items:['Sword','Quiver']});
+src.magnakai=['Weaponmastery','Curing','Psi-surge'];src.masteries=['Sword','Bow'];src.weaponmasteryLevel='scion';
+src.psychicMode='archSurge';src=C.setLoreCircle(src,'fire',true);src.ep-=5;src.csBonus=2;src.epBonus=1;
+src.special.push({name:'Shield',effect:'Keep unless player stores',ep:0,cs:2});
+src.storedSpecial.push({name:'Helmet',effect:'Safekeeping',ep:2,cs:0});src.notes='Retain';
+src.backpack=Array(6).fill('Supply');src.meals=2;src.arrows=3;
+const before=clone(src),next=C.startBook(13,src,{completed:true,gold:25,items:['Rope','Potion of Laumspur']});
+assert.deepEqual(src,before);assert.equal(next.ep,src.ep);assert.equal(R.maxEndurance(next),R.maxEndurance(src));
+assert.equal(next.baseCS,17);assert.equal(next.gold,src.gold+25);assert.equal(next.arrows,3);
+assert.equal(next.backpack.length+next.meals,10);assert.equal(C.limit(next),4);
+for(const key of ['magnakai','masteries','weaponmasteryLevel','psychicMode','loreCircles','notes','storedSpecial'])assert.deepEqual(next[key],src[key]);
+assert.ok(next.special.some(v=>v.name==='Shield'),'Carryover restrictions never discard possessions');
+assert.equal(next.grandAdvances,0);assert.equal(next.grandUnarmed,false);
+assert.throws(()=>C.startBook(13,src,{gold:24}),/Confirm/);
+assert.throws(()=>C.startBook(13,next,{completed:true,gold:24}),/later book/);
+assert.throws(()=>C.validateCharacter({...next,backpack:[...next.backpack,'Overflow']}));
+assert.throws(()=>C.startBook(13,src,{completed:true,gold:24,items:['4 Meals']}),/backpack is full/);
+const confirmed=C.startBook(13,src,{completed:true,fullKai:true,fullMagnakai:true,gold:24});
+assert.equal(confirmed.magnakai.length,10);assert.equal(confirmed.disciplines.length,10);
+assert.deepEqual(confirmed.loreCircles,src.loreCircles);assert.equal(confirmed.weaponmasteryLevel,'scion');
+assert.equal(confirmed.ep,src.ep);assert.equal(confirmed.grandUnarmed,false);
+const dead=clone(src);dead.ep=0;assert.equal(C.startBook(13,dead,{completed:true,gold:24}).ep,0);
+const active=clone(src);active.combat={name:'Test',cs:20,maxEP:30,ep:30,modifier:0,immune:false,undead:false,mindblastDamage:0,status:'active',rounds:[]};
+assert.equal(C.startBook(13,active,{completed:true,gold:24}).combat,null);
+
+s=clone(next);s.grandMaster=['Grand Weaponmastery','Kai-surge','Deliverance','Kai-screen'];s.grandMasteries=['Sword'];
+assert.equal(R.combatSkill(s).mastery,5);s.grandMaster=[];assert.equal(R.combatSkill(s).mastery,4);
+s.grandMaster=['Grand Weaponmastery'];s.grandMasteries=['Axe'];assert.equal(R.combatSkill(s).mastery,4);
+s.equipped=-1;assert.equal(R.combatSkill(s).unarmed,-1);s.grandUnarmed=true;assert.equal(R.combatSkill(s).unarmed,0);
+s.equipped=1;s.weapons=['Sword','Bow'];assert.equal(R.combatSkill(s).unarmed,0);
+s.grandMasteries=['Sword'];s.equipped=-2;s.special.push({name:'Sommerswerd',effect:'Weapon',ep:0,cs:0});
+assert.equal(R.combatSkill(s).sunSword,8);assert.equal(R.combatSkill(s).mastery,5);
+const wounds=R.maxEndurance(s)-s.ep,oldCS=R.combatSkill(s).total;
+s=C.setGrandTraining(s,{grandAdvances:3,loreCircles:['fire','light','solaris','spirit']});
+assert.equal(R.maxEndurance(s)-s.ep,wounds);assert.equal(R.combatSkill(s).total,oldCS+3+4);
+assert.equal(s.csBonus,2);assert.equal(s.epBonus,1);assert.equal(s.baseCS,17);
+s=C.setGrandTraining(s,{grandAdvances:0});assert.equal(R.maxEndurance(s)-s.ep,wounds);
+s.ep=0;assert.equal(C.setGrandTraining(s,{grandAdvances:8}).ep,0);
+s=fresh();s.ep=1;s=C.setGrandTraining(s,{grandAdvances:1});s.ep=1;
+s.combat={name:'Test',cs:20,maxEP:100,ep:100,modifier:0,immune:false,undead:false,mindblastDamage:3,status:'active',rounds:[]};
+const defeated=C.setGrandTraining(s,{grandAdvances:0});assert.equal(defeated.ep,0);assert.equal(defeated.combat.status,'defeat');
+for(const fields of [{grandAdvances:9},{grandAdvances:-1},{grandUnarmed:1},{grandMasteries:['Sword','Sword']},{magnakai:['Unknown']},{loreCircles:['fake']}])assert.throws(()=>C.setGrandTraining(s,fields));
+
+for(const [mode,bonus,cost] of [['kaiSurge',8,1],['kaiMindblast',4,0]]){
+  s=fresh();s.weapons=['Sword'];s.equipped=0;s.psychicMode=mode;s.grandMaster=['Kai-screen'];
+  s.combat={name:'Test',cs:30,maxEP:100,ep:100,modifier:0,immune:false,undead:false,mindblastDamage:3,status:'active',rounds:[]};
+  assert.equal(R.combatSkill(s).mindblast,bonus);assert.equal(R.combatSkill(s,true).mindblast,0);
+  const tableLoss=R.combatResult(R.combatSkill(s).total-30,5).hero;
+  const round=R.resolveRound(s,5);assert.equal(round.heroLoss,tableLoss+cost);assert.equal(round.mindblastLoss,0);assert.equal(round.surgeLoss||0,cost);
+  assert.deepEqual(C.validateCharacter(clone(s)),s);
+  s.combat.status='active';s.combat.immune=true;const evade=R.resolveRound(s,5,true);assert.equal(evade.enemyLoss,0);assert.equal(evade.surgeLoss||0,cost);
+}
+s=fresh();s.ep=8;assert.equal(R.cure(s),28);s.ep=34;assert.equal(R.cure(s),35);s.ep=0;assert.equal(R.cure(s),0);
+s.grandMaster=['Grand Huntmastery'];assert.equal(R.canHuntForMeal(s),true);
+assert.deepEqual(R.adjustedRoll(9,-1,true,true,true),{roll:9,modifier:-1,bow:false,mentora:false,grandBow:true,total:13});
+s=fresh();s.lastAdjustedRoll=R.adjustedRoll(9,-1,true,true,true);assert.deepEqual(C.validateCharacter(clone(s)),s);
+assert.throws(()=>C.validateCharacter({...s,lastAdjustedRoll:{...s.lastAdjustedRoll,total:18}}));
+for(const key of ['grandMaster','grandMasteries','grandAdvances','grandUnarmed']){const invalid=clone(s);delete invalid[key];assert.throws(()=>C.validateCharacter(invalid));}
+assert.throws(()=>C.validateCharacter({...s,section:351}));
+const charts={1:C.validateCharacter(C.newCharacter())};for(let b=2;b<=12;b++)charts[b]=C.startBook(b,null,{cs:16,ep:25,gold:12});charts[13]=s;
+const campaign={version:4,activeBook:13,books:charts};assert.deepEqual(C.validateSave(clone(campaign)),campaign);
+assert.equal(C.validateSave(s).version,4);assert.throws(()=>C.validateSave({...campaign,version:3}));
+const source='all-books-simple/en/xhtml-simple/lw/13tplor.htm';
+if(fs.existsSync(source)){
+  const html=fs.readFileSync(source,'utf8'),table=html.split('<a id="crtable">')[1].split('</tbody>')[0];
+  const rows=[...table.matchAll(/<tr>([\s\S]*?)<\/tr>/g)].map(m=>({roll:Number(m[1].match(/<th scope="row">(\d)<\/th>/)?.[1]),cells:[...m[1].matchAll(/<td>([\dk]+\/[\dk]+)<\/td>/g)].map(x=>x[1])})).filter(r=>r.cells.length);
+  assert.equal(rows.length,10);for(const row of rows)assert.deepEqual(row.cells,R.table[row.roll]);
+  for(const [name] of R.grandMaster)assert.ok(html.includes(name),`Discipline named in source: ${name}`);
+  console.log('Local Book 13: all 130 combat-table cells and twelve Discipline names match.');
+}else console.log('Optional local Book 13 comparison skipped (no download).');
+
+function harness(initial){
+  const elements=new Map(),listeners=new Map(),storage=new Map(initial);
+  function element(key){if(!elements.has(key))elements.set(key,{dataset:{},classList:{add(){},remove(){}},addEventListener(type,fn){listeners.set(key+':'+type,fn);},focus(){},close(){},showModal(){},scrollTop:0});return elements.get(key);}
+  const context=vm.createContext({window:{LWRules:R,LWCampaign:C,addEventListener(){}},document:{querySelector:element,addEventListener(type,fn){listeners.set(type,fn);}},localStorage:{getItem:key=>storage.get(key)??null,setItem:(key,value)=>storage.set(key,value)},crypto:{getRandomValues(a){a[0]=5;return a;}},matchMedia:()=>({matches:false}),setTimeout:()=>0,clearTimeout(){},console});
+  context.FormData=class{constructor(form){this.values=form.values;}get(key){const v=this.values[key];return Array.isArray(v)?v[0]??null:v??null;}getAll(key){const v=this.values[key];return v===undefined?[]:Array.isArray(v)?v:[v];}has(key){return Object.hasOwn(this.values,key);}};
+  const run=code=>vm.runInContext(code,context);run(fs.readFileSync(require.resolve('../app.js'),'utf8'));
+  const submit=(id,values,dataset={})=>listeners.get('submit')({target:{id,values,dataset},preventDefault(){}});
+  const click=action=>listeners.get('click')({target:{closest(){return {dataset:{action},disabled:false};}},detail:0});
+  return {run,submit,click,storage,elements,listeners};
+}
+const key3='lone-wolf-action-chart-v3',key4='lone-wolf-action-chart-v4';
+const oldSave=JSON.stringify({version:3,activeBook:12,books:{12:src}});
+const h=harness([[key3,oldSave]]);
+h.run('bookSetupDialog(13,true)');assert.match(h.elements.get('#dialog').innerHTML,/fullMagnakai/);
+h.submit('book2-form',{completed:'on',gold:'24',keep:'0'},{book:'13',source:'12',continuing:'true'});
+assert.equal(h.run('state.book'),13);assert.equal(h.run('campaign.version'),4);assert.equal(h.storage.get(key3),oldSave);
+h.run('switchView("gear")');assert.equal((h.elements.get('#main').innerHTML.match(/class="item(?: |")/g)||[]).length,10);
+assert.doesNotMatch(h.elements.get('#main').innerHTML,/class="pager"/);
+h.run('switchView("kai")');assert.equal((h.elements.get('#main').innerHTML.match(/class="discipline"/g)||[]).length,12);
+h.run('toggleDiscipline("Grand Weaponmastery");masteryDialog();');
+h.submit('grand-master-form',{grandMasteries:'Sword',grandAdvances:'2',grandUnarmed:'trained',magnakai:src.magnakai,masteries:src.masteries,inherited:src.disciplines,mastery:'Axe',weaponmasteryLevel:'scion',loreCircles:src.loreCircles});
+assert.equal(h.run('state.grandAdvances'),2);assert.equal(h.run('state.grandUnarmed'),true);
+assert.equal(h.run('R.combatSkill(state).mastery'),5);assert.equal(h.run('R.maxEndurance(state)-state.ep'),R.maxEndurance(src)-src.ep);
+h.run('undo()');assert.equal(h.run('state.grandAdvances'),0);assert.equal(h.run('state.grandUnarmed'),false);
+h.submit('psychic-form',{mode:'kaiSurge'});h.submit('combat-form',{name:'Test',cs:'20',ep:'100',modifier:'0',mindblastDamage:'0'});
+h.run('rollRound(false,0)');assert.equal(h.run('state.combat.rounds[0].surgeLoss'),1);h.run('undo()');assert.equal(h.run('state.combat.rounds.length'),0);
+h.submit('adjusted-roll-form',{roll:'9',modifier:'-1',bow:'on',mentora:'on',grandBow:'on'});assert.equal(h.run('state.lastAdjustedRoll.total'),13);
+h.run('state.ep=8;persist()');h.click('deliverance-cure');assert.equal(h.run('state.ep'),28);h.run('undo()');assert.equal(h.run('state.ep'),8);
+h.run('campaign=load();state=campaign.books[campaign.activeBook]');assert.equal(h.run('state.psychicMode'),'kaiSurge');assert.equal(h.run('state.lastAdjustedRoll.grandBow'),true);
+h.run(`change(()=>{campaign=C.validateSave(${oldSave});state=campaign.books[campaign.activeBook]})`);
+assert.equal(JSON.parse(h.storage.get(key4)).activeBook,12);assert.equal(h.run('load().activeBook'),12);assert.equal(h.storage.get(key3),oldSave);
+h.run('undo()');assert.equal(h.run('state.book'),13);
+const corrupt=harness([[key4,'{bad'],[key3,oldSave]]);assert.equal(corrupt.run('state.book'),1);assert.match(corrupt.run('recoveryNotice'),/could not be loaded/);
+console.log('Passed: Book 13 setup, inheritance, ten slots, explicit bonuses/costs, wounds, thirteen-chart saves, v4 upgrade/retention, real forms, reload and Undo.');

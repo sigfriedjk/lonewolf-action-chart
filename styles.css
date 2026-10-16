@@ -55,3 +55,7 @@ main[data-view=special] .special-note{display:block}
 .special-name .item-note{display:block;font-weight:400}
 main[data-series=magnakai][data-view=kai]{gap:7px}main[data-series=magnakai] .discipline{min-height:44px}fieldset{margin:0;padding:10px;border:1px solid var(--line);border-radius:10px;min-width:0}legend{font-size:12px;font-weight:650;color:var(--green)}fieldset .checkbox-row{color:var(--ink)}fieldset .hint+label{margin-top:8px}.special-name{display:block;background:none;border:0;color:inherit;text-align:left;padding:0;min-height:44px;width:100%;font:inherit;font-size:13px;font-weight:600;overflow-wrap:anywhere}
 @media(max-height:660px){main[data-series=magnakai][data-view=kai]{gap:3px;padding-top:4px;padding-bottom:4px}main[data-series=magnakai][data-view=kai] .discipline-grid{gap:3px}main[data-series=magnakai][data-view=kai] .gesture-hint{font-size:9px}.lore-grid{gap:4px}.lore-circle{padding:3px 6px}}
+/* Grand Master records keep all ten backpack rows on a single page. */
+main[data-series=grandmaster] .backpack-list{min-height:494px;flex:none}
+main[data-series=grandmaster][data-view=gear] .backpack-list .item{min-height:44px;flex:none}
+main[data-series=grandmaster][data-view=kai] .discipline{min-height:48px}
