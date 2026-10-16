@@ -1,8 +1,8 @@
 # Lone Wolf Action Chart
 
-A mobile-first companion for **Lone Wolf Books 1–7**, written in plain HTML, CSS, and JavaScript. No framework, build step, account, backend, or dependencies. The book7v1 release supports Books 1–7.
+A mobile-first companion for **Lone Wolf Books 1–12**, written in plain HTML, CSS, and JavaScript. No framework, build step, account, backend, or dependencies. The book12v1 release supports Books 1–12.
 
-**Release:** [book7v1](https://github.com/sigfriedjk/lonewolf-action-chart/tree/book7v1) · **Play:** [Action Chart](https://sigfriedjk.github.io/lonewolf-action-chart/index.html) · **Developer:** [HANDOFF.md](HANDOFF.md)
+**Release:** [book12v1](https://github.com/sigfriedjk/lonewolf-action-chart/tree/book12v1) · **Play:** [Action Chart](https://sigfriedjk.github.io/lonewolf-action-chart/index.html) · **Developer:** [HANDOFF.md](HANDOFF.md)
 
 The direct `index.html` link is provided because it resolved a previously reported phone 404 at the directory URL. Saves stay on the same origin.
 
@@ -10,7 +10,7 @@ The direct `index.html` link is provided because it resolved a previously report
 
 The goal is an electronic paper Action Chart: simple recordkeeping and useful arithmetic, with the player interpreting and enforcing the rules. The current Books 1–5 app still enforces some inventory, skill, and action limits described below; these are existing behaviors to review, not a mandate to expand rule enforcement.
 
-[BOOKS6-20-PLAN.md](BOOKS6-20-PLAN.md) records the 14 October 2026 review and remaining roadmap. Jon subsequently approved Book 6 and its compact layout; [BOOK6-REVIEW.md](BOOK6-REVIEW.md) records the Book 6 implementation. [BOOK7-REVIEW.md](BOOK7-REVIEW.md) records Book 7’s source audit and verification. Books 8–20 remain planned. Discuss further layout or major behavior changes before implementation. Prefer existing manual controls and Journal for adventure-specific exceptions.
+[BOOKS6-20-PLAN.md](BOOKS6-20-PLAN.md) records the 14 October 2026 review and remaining roadmap. Jon subsequently approved Book 6 and its compact layout; [BOOK6-REVIEW.md](BOOK6-REVIEW.md) records the Book 6 implementation. [BOOK7-REVIEW.md](BOOK7-REVIEW.md) records Book 7’s source audit and verification. Books 8–12 are included in `book12v1`; [BOOKS8-12-REVIEW.md](BOOKS8-12-REVIEW.md) records the approved choices and verification. Books 13–20 remain planned. Discuss further layout or major behavior changes before implementation. Prefer existing manual controls and Journal for adventure-specific exceptions.
 
 ## Book 6
 
@@ -18,7 +18,7 @@ Book 6 adds separate Magnakai selections and multiple weapon masteries, with inh
 
 On Kai, four Lore-circle checkboxes apply CS/EP bonuses automatically. Gold highlighting and **Ready** show that the required skills are selected. Checks stay under your control, including after skill edits; do not duplicate their bonuses in Extra CS/EP. Changes preserve wounds and never revive a dead hero. Arrows share the Stats resource card with Gold; tap either total for direct editing and −/+. A starting Quiver adds six arrows once; later shots, replenishment, and quiver moves are manual. Meals stays alongside. Earlier books retain their Gold controls.
 
-Five optional supplies include Bow, Quiver, four rations, Rope/Tinderbox, and the +2 EP waistcoat. Weaponmastery +3 replaces a matching inherited Weaponskill +2. Psi-screen protects against incoming Mindblast. Ordinary Mindblast is calculated; Psi-surge's extra CS and per-round EP cost are manual, as are Healing/Curing, shot modifiers, and section exceptions. Bow counts as unarmed in ordinary melee. Tap a Book 6 Special Item's name/description to edit its description.
+Five optional supplies include Bow, Quiver, four rations, Rope/Tinderbox, and the +2 EP waistcoat. Weaponmastery +3 replaces a matching inherited Weaponskill +2. Psi-screen protects against incoming Mindblast. Ordinary Mindblast is calculated; In this release, player-chosen psychic attacks include their bonus and EP cost; ordinary healing and section exceptions remain manual. Bow counts as unarmed in ordinary melee. Tap a Book 6 Special Item's name/description to edit its description.
 
 Using Book 6 creates a version 3 campaign under a new browser-storage key, retaining the old keys. Legacy imports remain supported; new exports need the newer app. See the review for migration and verification details.
 
@@ -27,6 +27,16 @@ Using Book 6 creates a version 3 campaign under a new browser-storage key, retai
 Castle Death uses the same Magnakai controls. Book 6 continuation preserves selected skills, masteries, checked Lore-circles, arrows, and wounds. Confirmed Magnakai completions increase the recommended skill count; choose your new Discipline and any earned mastery yourself. Primate improvements are reference text in the Discipline dialogs. Fresh Book 7 still recommends three skills and grants no inherited Kai bonuses.
 
 Five optional supplies use Book 7's own list: a Lantern is a Backpack Item, three Meals use three slots, and three Fireseeds are separate Special Items you remove manually as used. A selected Quiver adds six arrows once. Setup adds a Map of Dessi. No encounter effects or equipment losses are applied from bookmarks. Book 7 uses the same v3 storage as Book 6, including when starting without a Book 6 chart.
+
+## Books 8–12
+
+Books 8–9 reuse the Magnakai charts with their own maps, five supply choices, and Tutelary/Principalin guidance. In Mastery, explicitly select Standard (+3 melee / −4 unarmed), Tutelary (+3 / −2), or Scion-kai (+4 / −1). The choice applies with Weaponmastery selected, is retained in carryover and saves, and supports Undo. Book number and skill count never select an improvement. Older Magnakai saves default to Standard. Do not duplicate the selected improvement in manual CS adjustments.
+
+Books 10–12 add their own setup lists and further training guidance. Continued Book 11 grants no supplies or gold; fresh Book 11 grants two Meals plus six choices. Book 12 offers six choices including four Meals. Every chart stays independent.
+
+For Magnakai characters, **Psychic attack** on Combat (also in the menu) lets you choose Mindblast or Psi-surge, including Archmaster versions, or no psychic attack. The chart adds the selected bonus and includes surge's EP cost each Fight/Evade round. Do not duplicate these in Extra CS or manual EP deductions. You decide whether your skills, current EP, and the encounter permit the attack. The standard default preserves existing Mindblast behavior; it never chooses higher-rank abilities.
+
+**Adjusted missile roll**, in the menu or Weaponmastery dialog, adds selected Bow mastery +3, Mentora +2, and a section modifier to a rolled or entered 0–9 number. You mark off arrows yourself. **Restore 20 EP**, in the Curing dialog, applies Archmaster recovery when you press it; the chart reminds you of the conditions and leaves the 100-day limit to your record. Both support Undo.
 
 ## Run locally
 
@@ -66,6 +76,11 @@ Sequential play gives five, six, seven, eight, and nine Disciplines in Books 1�
 | 5 | Shadow on the Sand | Up to 4 choices | Map of Vassagonia | 400 |
 | 6 | The Kingdoms of Terror | Up to 5 choices | Map of the Stornlands | 350 |
 | 7 | Castle Death | Up to 5 choices | Map of Dessi | 350 |
+| 8 | The Jungle of Horrors | Up to 5 choices | Map of the Danarg | 350 |
+| 9 | The Cauldron of Fear | Up to 5 choices | Map of Anari | 350 |
+| 10 | The Dungeons of Torgar | Up to 5 choices | Map of Ghatan | 350 |
+| 11 | The Prisoners of Time | Fresh: up to 6; continued: none | Fresh: 2 Meals; no map | 350 |
+| 12 | The Masters of Darkness | Up to 6 choices | Map of the Darklands | 350 |
 
 Supply selectors are optional: leave unused ones at No item. Different choices are required. Listed ration/potion bundles expand into individual Meals/doses. Duplicate or capacity errors preserve the form and existing charts. Regular weapons are limited to two, backpack contents to eight including every Meal/dose; supplies are never silently discarded. New armour adjusts current/max EP by its bonus without healing prior wounds.
 
@@ -85,7 +100,7 @@ Changes autosave in this browser. **Export** saves every book chart, including s
 
 Saves belong to the browser/origin. Local files, localhost, and production have separate storage. Export/import to change devices or origins. If storage is unavailable the app asks you to export; invalid stored data triggers a recovery notice and an editable starter chart. Older app releases cannot read later-book saves, so export before testing rollback.
 
-Books 8 onward, a book reader, cloud sync/accounts, and a PWA/offline cache are outside the current implementation. Books 6–7 are included in `book7v1`. Once loaded, the chart makes no network calls. Ordinary portrait layouts were checked at 390×844, 375×667, and 320×568; dialogs, landscape/small viewports, or enlarged text may scroll to keep controls reachable. Special lists and combat history use pagination. The 100 combined carried/stored Special Item records are a software safeguard rather than a game slot limit.
+Books 13 onward, a book reader, cloud sync/accounts, and a PWA/offline cache are outside the current implementation. Books 1–12 are included in `book12v1`. Once loaded, the chart makes no network calls. Ordinary portrait layouts were checked at 390×844, 375×667, and 320×568; dialogs, landscape/small viewports, or enlarged text may scroll to keep controls reachable. Special lists and combat history use pagination. The 100 combined carried/stored Special Item records are a software safeguard rather than a game slot limit.
 
 ## Verify and continue development
 
@@ -110,10 +125,12 @@ node tests/disciplines.test.js
 node tests/books3-5.test.js
 node tests/book6.test.js
 node tests/book7.test.js
+node tests/books8-9.test.js
+node tests/books10-12.test.js
 git diff --check
 ```
 
-Tests cover combat table/bonuses, carryover and saves, full starting supplies, gesture cancellation, safekeeping, Mindblast/Mindshield, equipment limits, and Undo. The Book 6 suite adds Magnakai/inherited records, Lore-circles, arrows, and version 3 migration/imports. The Book 7 suite adds independent Magnakai continuation, manual progression, its supplies, seven-chart saves, and storage upgrade without Book 6. They run without the ignored source downloads using a tracked combat-table fixture; extra Book 2–7 source comparisons run when local XHTML exists. Browser verification and source details are in [BOOKS3-5-REVIEW.md](BOOKS3-5-REVIEW.md), [BOOK6-REVIEW.md](BOOK6-REVIEW.md), and [BOOK7-REVIEW.md](BOOK7-REVIEW.md). Physical-phone testing was not performed.
+Tests cover combat table/bonuses, carryover and saves, full starting supplies, gesture cancellation, safekeeping, Mindblast/Mindshield, equipment limits, and Undo. The Book 6 suite adds Magnakai/inherited records, Lore-circles, arrows, and version 3 migration/imports. The Book 7 suite adds independent Magnakai continuation, manual progression, its supplies, seven-chart saves, and storage upgrade without Book 6. They run without the ignored source downloads using a tracked combat-table fixture; extra Book 2–12 source comparisons run when local XHTML exists. This release adds tests for all twelve charts, explicit improvements, adjusted missile rolls, psychic costs, and Curing. Browser verification and source details are in [BOOKS3-5-REVIEW.md](BOOKS3-5-REVIEW.md), [BOOK6-REVIEW.md](BOOK6-REVIEW.md), [BOOK7-REVIEW.md](BOOK7-REVIEW.md), and [BOOKS8-12-REVIEW.md](BOOKS8-12-REVIEW.md). Physical-phone testing was not performed.
 
 Read [HANDOFF.md](HANDOFF.md) for architecture, save schema, invariants, known limitations, deployment, and next-book guidance. [AGENTS.md](AGENTS.md) gives concise repository instructions. Other optional proposals were set aside by Jon and are not pending requirements.
 
@@ -121,7 +138,7 @@ Read [HANDOFF.md](HANDOFF.md) for architecture, save schema, invariants, known l
 
 GitHub Pages publishes the root of `main`; `.nojekyll` keeps the static assets unchanged. Updates to main deploy automatically. Browser asset changes require fresh query versions in `index.html`. The repository excludes downloaded books, adventure backups, temporary files, and dependencies.
 
-[CHANGELOG.md](CHANGELOG.md) records release checkpoints: `book2v1`, `book2v2`, `book2v3`, `book2v4`, `book5v1`, and `book7v1`. Use immutable tags when reviewing or handing off a known version.
+[CHANGELOG.md](CHANGELOG.md) records release checkpoints: `book2v1`, `book2v2`, `book2v3`, `book2v4`, `book5v1`, `book7v1`, and `book12v1`. Use immutable tags when reviewing or handing off a known version.
 
 ## Sources
 

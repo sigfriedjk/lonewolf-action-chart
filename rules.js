@@ -15,13 +15,13 @@
     ['Mind Over Matter', 'Move small objects by concentration.']
   ];
   const magnakai = [
-    ['Weaponmastery','Gain 3 Combat Skill with a mastered melee weapon. Choose three weapon types initially in Mastery. Bow mastery adds 3 to a shot roll when the section permits; apply it yourself. Masteries do not give you weapons.'],
+    ['Weaponmastery','Standard Weaponmastery gives 3 Combat Skill with a mastered melee weapon. Choose Standard, Tutelary, or Scion-kai explicitly in Mastery to include the improvement you use. Choose three weapon types initially in Mastery. Bow mastery adds 3 to an appropriate shot roll; select it in Adjusted roll when it applies. Masteries do not give you weapons.'],
     ['Animal Control','Communicate with animals, understand their intentions, and use the advantages the adventure describes when fighting from horseback.'],
     ['Curing','Restore 1 Endurance per numbered section without combat; apply it manually on Stats. Healing and Curing do not stack. The book describes other uses, including identifying herbs and treating disease or injuries.'],
     ['Invisibility','Blend into your surroundings, conceal your heat and scent, and adopt local speech and mannerisms. Follow the choices in the adventure.'],
     ['Huntmastery','Find food even in wasteland and desert. The Meal helper offers to keep your ration. Follow the section for ambushes and other uses; adjust scores yourself.'],
     ['Pathsmanship','Navigate, read languages and symbols, follow tracks, detect traps, and sense north. The adventure describes when these abilities help.'],
-    ['Psi-surge','Choose Mindblast (+2 CS, no cost) or Psi-surge (+4 CS, costing 2 EP per used round). They do not stack. This chart normally adds Mindblast +2; for surge add another +2 using Extra CS, deduct 2 EP manually each used round on Stats, and remove the extra CS when stopping. Do not use surge at 6 EP or below. Follow enemy immunity instructions.'],
+    ['Psi-surge','Choose Mindblast (+2 CS, no cost) or Psi-surge (+4 CS, costing 2 EP per used round). They do not stack. Choose your attack in Psychic combat to include its bonus and per-round cost. Do not also enter the bonus in Extra CS or deduct the cost manually. Do not use surge at 6 EP or below. Follow enemy immunity instructions.'],
     ['Psi-screen','Protect against psychic attacks, illusions, and hypnosis as directed by the adventure. The enemy Mindblast helper treats Psi-screen as protection.'],
     ['Nexus','Resist extremes of heat and cold and move objects through concentration. Follow the section and apply any score changes manually.'],
     ['Divination','Sense danger, hidden enemies, intentions, and psychic abilities, and communicate telepathically when the adventure permits.']
@@ -32,7 +32,7 @@
     {id:'solaris',name:'Solaris',skills:['Invisibility','Huntmastery','Pathsmanship'],cs:1,ep:3},
     {id:'spirit',name:'Spirit',skills:['Psi-surge','Psi-screen','Nexus','Divination'],cs:3,ep:3}
   ];
-  const isMagnakai = s => s.book===6 || s.book===7;
+  const isMagnakai = s => Number.isInteger(s.book) && s.book>=6 && s.book<=12;
   const primateAbilities = {
     'Animal Control':'Repel hostile animals by disrupting their senses; effectiveness depends on the animal.',
     Curing:'Delay poison or venom while seeking a cure; this does not neutralize it.',
@@ -41,6 +41,43 @@
     Nexus:'Greater resistance to harmful gases and fumes.'
   };
   const primateGuidance = (s,name) => s.book===7 && primateAbilities[name] ? `Primate reference (four Magnakai skills): ${primateAbilities[name]} Follow the section and your training record; apply effects manually.` : '';
+  const weaponmasteryLevels = {
+    standard:{label:'Standard',melee:3,unarmed:-4},
+    tutelary:{label:'Tutelary',melee:3,unarmed:-2},
+    scion:{label:'Scion-kai',melee:4,unarmed:-1}
+  };
+  const weaponmasteryEffect = s => isMagnakai(s) && s.magnakai?.includes('Weaponmastery') ? weaponmasteryLevels[s.weaponmasteryLevel] || weaponmasteryLevels.standard : weaponmasteryLevels.standard;
+  const trainingGuidance = (s,name) => {
+    if(!isMagnakai(s))return '';
+    const parts=[];
+    if(s.book>=7 && primateAbilities[name])parts.push(`Primate reference (four skills): ${primateAbilities[name]}`);
+    const tutelary={Weaponmastery:'Unarmed penalty becomes −2. Select Tutelary in Mastery to include it in calculations.',Invisibility:'Distract an enemy away from your hiding place.',Pathsmanship:'Detect ambushes within 500 yards; wounds or hunger can limit this.', 'Psi-screen':'Defend against magical charms and hostile telepathy.',Divination:'Recognize magical beings or objects unless shielded.'};
+    const principalin={'Animal Control':'Call nearby woodland animals to help.',Invisibility:'Mask the sound of your movements.',Huntmastery:'Use telescopic vision.', 'Psi-surge':'Confuse an enemy as directed by the section.',Nexus:'Extinguish fires by concentration.'};
+    if(s.book>=8 && tutelary[name])parts.push(`Tutelary reference (five skills): ${tutelary[name]}`);
+    if(s.book>=9 && principalin[name])parts.push(`Principalin reference (six skills): ${principalin[name]}`);
+    const mentora={Weaponmastery:'Missile rolls gain +2. Select Mentora in Adjusted roll when it applies.',Curing:'Neutralize poison, venom, or toxins as the section directs.',Pathsmanship:'Cross terrain without leaving tracks.', 'Psi-screen':'Protection from psychic attacks by non-corporeal beings.',Divination:'Read psychic residues of past events.'};
+    const scion={Weaponmastery:'Mastered melee +4 and unarmed −1. Select Scion-kai in Mastery.',Invisibility:'Alter your appearance to deceive an enemy.',Pathsmanship:'Converse with sentient creatures and evade magical detection.', 'Psi-screen':'Redirect psychic energies as the section directs.',Divination:'Spirit walking leaves your body vulnerable; follow the section.'};
+    const archmaster={'Animal Control':'Command animals; hostile creatures are harder to control.',Curing:'At 6 EP or less in combat, restore 20 EP once per 100 days. You decide eligibility; use Restore 20 EP.',Huntmastery:'Heightened hearing, smell, and night vision.', 'Psi-surge':'Choose Archmaster Mindblast +3, or Psi-surge +6 costing 1 EP per round. Surge cannot be used at 4 EP or below. Choose the mode explicitly in Psychic combat.',Nexus:'Limited immunity to heat, cold, fire, gases, and corrosive liquids.'};
+    for(const [book,rank,skills] of [[10,'Mentora (seven skills)',mentora],[11,'Scion-kai (eight skills)',scion],[12,'Archmaster (nine skills)',archmaster]])if(s.book>=book && skills[name])parts.push(`${rank}: ${skills[name]}`);
+    return parts.length?parts.join(' ')+' Follow your training record and the section; improvements are never selected by book number or skill count.':'';
+  };
+  const psychicModes = {
+    legacy:{label:'Standard Mindblast from selected skills',cs:2,cost:0},
+    none:{label:'No psychic attack',cs:0,cost:0},
+    mindblast:{label:'Mindblast +2 CS',cs:2,cost:0},
+    surge:{label:'Psi-surge +4 CS · 2 EP/round',cs:4,cost:2},
+    archMindblast:{label:'Archmaster Mindblast +3 CS',cs:3,cost:0},
+    archSurge:{label:'Archmaster Psi-surge +6 CS · 1 EP/round',cs:6,cost:1}
+  };
+  const psychicEffect = s => {
+    if(!isMagnakai(s) || !s.psychicMode || s.psychicMode==='legacy')return {cs:s.disciplines.includes('Mindblast') || s.magnakai?.includes('Psi-surge')?2:0,cost:0};
+    return psychicModes[s.psychicMode] || psychicModes.none;
+  };
+  function adjustedRoll(roll,modifier=0,bow=false,mentora=false) {
+    if(!Number.isInteger(roll) || roll<0 || roll>9 || !Number.isInteger(modifier) || modifier< -99 || modifier>99 || typeof bow!=='boolean' || typeof mentora!=='boolean')throw new Error('Enter a roll from 0–9 and a whole-number modifier from −99 to 99.');
+    return {roll,modifier,bow,mentora,total:roll+modifier+(bow?3:0)+(mentora?2:0)};
+  }
+  const cure = s => s.ep>0?Math.min(maxEndurance(s),s.ep+20):0;
   const disciplineList = s => isMagnakai(s) ? magnakai : disciplines;
   const selectedDisciplines = s => isMagnakai(s) ? s.magnakai : s.disciplines;
   const weaponTypes = s => [...new Set(isMagnakai(s) ? [...weapons,'Bow'] : weapons)];
@@ -69,12 +106,13 @@
     const sunSword = s.equipped === -2 && s.special.some(v => v.name === 'Sommerswerd') ? 8 : 0;
     const weapon = sunSword ? 'Sommerswerd' : s.weapons[s.equipped];
     const melee = weapon && weapon!=='Bow';
-    const unarmed = melee ? 0 : -4;
+    const selectedMastery = weaponmasteryEffect(s);
+    const unarmed = melee ? 0 : isMagnakai(s) && s.magnakai?.includes('Weaponmastery') ? selectedMastery.unarmed : -4;
     const matches = type => sunSword ? ['Short Sword','Sword','Broadsword'].includes(type) : weapon===type;
     const kaiMastery = melee && matches(s.mastery) && s.disciplines.includes('Weaponskill') ? 2 : 0;
-    const higherMastery = melee && s.magnakai?.includes('Weaponmastery') && s.masteries?.some(matches) ? 3 : 0;
+    const higherMastery = melee && s.magnakai?.includes('Weaponmastery') && s.masteries?.some(matches) ? selectedMastery.melee : 0;
     const mastery = Math.max(kaiMastery,higherMastery);
-    const mindblast = (s.disciplines.includes('Mindblast') || s.magnakai?.includes('Psi-surge')) && !immune ? 2 : 0;
+    const mindblast = immune ? 0 : psychicEffect(s).cs;
     const lore = loreBonus(s).cs;
     const equipment = s.special.reduce((sum,item) => sum + (item.cs || 0), 0);
     return { total: s.baseCS + s.csBonus + unarmed + mastery + mindblast + modifier + equipment + sunSword + lore, unarmed, mastery, mindblast, equipment, sunSword, lore };
@@ -91,16 +129,18 @@
     const result = combatResult(ratio, roll);
     const tableLoss = result.hero === 'k' ? s.ep : Math.min(s.ep, result.hero);
     const mindblastLoss = Math.min(s.ep-tableLoss,enemyMindblast(s,c));
-    const heroLoss = tableLoss + mindblastLoss;
+    const surgeLoss = Math.min(s.ep-tableLoss-mindblastLoss,psychicEffect(s).cost);
+    const heroLoss = tableLoss + mindblastLoss + surgeLoss;
     const multiplier = c.undead && combatSkill(s).sunSword ? 2 : 1;
     const enemyLoss = evade ? 0 : result.enemy === 'k' ? c.ep : Math.min(c.ep, result.enemy * multiplier);
     s.ep -= heroLoss;
     c.ep -= enemyLoss;
     c.rounds.push({ roll, ratio, heroLoss, enemyLoss, mindblastLoss, evade });
+    if(surgeLoss)c.rounds.at(-1).surgeLoss=surgeLoss;
     c.status = s.ep === 0 ? 'defeat' : evade ? 'evaded' : c.ep === 0 ? 'victory' : 'active';
     return c.rounds.at(-1);
   }
-  const rules = { weapons, disciplines, magnakai, loreCircles, isMagnakai, primateGuidance, disciplineList, selectedDisciplines, weaponTypes, loreReady, loreBonus, psychicProtection, table, clamp, potionRecovery, canHuntForMeal, enemyMindblast, maxEndurance, combatSkill, combatResult, resolveRound };
+  const rules = { weapons, disciplines, magnakai, loreCircles, psychicModes, psychicEffect, adjustedRoll, cure, weaponmasteryLevels, weaponmasteryEffect, trainingGuidance, isMagnakai, primateGuidance, disciplineList, selectedDisciplines, weaponTypes, loreReady, loreBonus, psychicProtection, table, clamp, potionRecovery, canHuntForMeal, enemyMindblast, maxEndurance, combatSkill, combatResult, resolveRound };
   if (typeof module !== 'undefined') module.exports = rules;
   else root.LWRules = rules;
 })(typeof window !== 'undefined' ? window : globalThis);

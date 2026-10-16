@@ -1,21 +1,25 @@
-# Developer handoff — book7v1
+# Developer handoff — book12v1
 
-Start with this file, [README.md](README.md), and [BOOKS3-5-REVIEW.md](BOOKS3-5-REVIEW.md). The release supports Lone Wolf Books 1–7, including independent Magnakai charts, Lore-circle bonuses, arrows, Book 7 supplies, and manual Primate guidance. Release date: 15 October 2026.
+Start with this file, [README.md](README.md), and [BOOKS3-5-REVIEW.md](BOOKS3-5-REVIEW.md). The release supports Lone Wolf Books 1–12, including independent Magnakai charts, player-selected mastery and psychic improvements, adjusted missile rolls, Archmaster Curing, and book-specific supplies. Release date: 16 October 2026.
 
 **Book 7 continuation — 15 October 2026:** The current request authorized Book 7. Its local implementation extends the handoff commit `c4a904722ae8a9e6384ed784221f3a49a72e8dbb` with independent Magnakai continuation, Book 7 supplies, and manual Primate guidance. See [BOOK7-REVIEW.md](BOOK7-REVIEW.md). It reuses Book 6 controls and save versions. Run all seven suites, including `node tests/book7.test.js`. Books 8 onward remain outside this release.
 
 **Book 6 development work:** Jon approved implementing Book 6, plus four manually checked Lore-circle bonuses with readiness highlighting and an editable arrow total beside Gold. The compact layout was explicitly approved. The implementation is included in `book7v1`. Read [BOOK6-REVIEW.md](BOOK6-REVIEW.md) for actual behavior, exact source anchors, save migration, and verification. Book 7 is covered by the continuation above; Books 8 onward require their own scope.
 
-## Release checkpoint — 15 October 2026
+## Books 8–12 integration — 16 October 2026
 
-Jon authorized integrating Books 6–7 into `main` and creating the new immutable `book7v1` tag. The Book 6 foundation is commit `c4a904722ae8a9e6384ed784221f3a49a72e8dbb`; Book 7 and the download script were recovered from the previous chat's recorded edits before source verification. Use `main` or `book7v1` for this integrated version; `codex/book6-cloud-handoff` remains the older Book 6 checkpoint.
+Jon authorized work through Book 12, stopping for layout/implementation decisions. Books 8–12 and the approved player-selected Weaponmastery, adjusted missile roll, psychic attacks/costs, and Curing action are included in `book12v1`. Read [BOOKS8-12-REVIEW.md](BOOKS8-12-REVIEW.md), including source differences, new record fields/defaults, and verification. The new optional-import `weaponmasteryLevel` field defaults to Standard; current validation preserves it, and older app versions can discard it. Keep the v3 storage keys and independent charts. Run `node tests/books8-9.test.js` and `node tests/books10-12.test.js` in addition to the existing seven suites. Jon subsequently authorized pushing, tagging, and deploying this work as `book12v1`.
+
+## Release checkpoints
+
+Jon authorized integrating Books 6–7 into `main` and creating the new immutable `book7v1` tag. The Book 6 foundation is commit `c4a904722ae8a9e6384ed784221f3a49a72e8dbb`; Book 7 and the download script were recovered from the previous chat's recorded edits before source verification. The current integrated version is `main` / `book12v1`; `book7v1` is the previous release; `codex/book6-cloud-handoff` remains the older Book 6 checkpoint.
 
 - Repository: https://github.com/sigfriedjk/lonewolf-action-chart
-- Release checkpoint: https://github.com/sigfriedjk/lonewolf-action-chart/tree/book7v1
+- Release checkpoint: https://github.com/sigfriedjk/lonewolf-action-chart/tree/book12v1
 - Live app: https://sigfriedjk.github.io/lonewolf-action-chart/index.html
 - Production branch: `main`; GitHub Pages publishes the repository root.
 
-Ignored Project Aon downloads, browser adventure saves, and temporary screenshots are excluded. Run `bash scripts/download-books.sh` for optional local Book 2–7 source comparisons. All seven suites also run without those downloads. Browser saves stay on their original origin; use app export/import to move them.
+Ignored Project Aon downloads, browser adventure saves, and temporary screenshots are excluded. Run `bash scripts/download-books.sh` for optional local Book 2–12 source comparisons. All nine suites also run without those downloads. Browser saves stay on their original origin; use app export/import to move them.
 
 ## Product constraints and accepted scope
 
@@ -25,7 +29,7 @@ This is a plain JavaScript, mobile-first Action Chart. Keep the six tabs (Stats,
 
 Jon prefers no installations unless strictly required. The project has no dependencies, build step, server component, or package-manager setup. Use an existing Node runtime for preview/tests. Preserve saves and existing uncommitted work. Current instructions from Jon take precedence over these notes.
 
-The approved Book 5 additions are implemented. Other optional proposals (alternative source-chart selector, external-food controls, and other encounter-effect controls) were explicitly set aside; Journal and manual score controls cover those needs. Do not revive them as unfinished requirements. Books 6–7 are included in `book7v1`; Books 8 onward, a reader, accounts/cloud sync, and a PWA/offline cache are outside the current implementation.
+The approved Book 5 additions are implemented. Other optional proposals (alternative source-chart selector, external-food controls, and other encounter-effect controls) were explicitly set aside; Journal and manual score controls cover those needs. Do not revive them as unfinished requirements. Books 6–7 are included in `book7v1`; Books 8–12 are included in `book12v1`; Books 13 onward, a reader, accounts/cloud sync, and a PWA/offline cache are outside the current implementation.
 
 ## File map
 
@@ -87,10 +91,12 @@ node tests/disciplines.test.js
 node tests/books3-5.test.js
 node tests/book6.test.js
 node tests/book7.test.js
+node tests/books8-9.test.js
+node tests/books10-12.test.js
 git diff --check
 ```
 
-All tests run from a normal clone without the ignored book downloads: rules tests use the tracked Book 1 fixture. Additional comparisons against local Book 2–7 XHTML run only when those sources exist. This optional source verification was performed for this release; its absence in another clone does not mean it was performed there.
+All tests run from a normal clone without the ignored book downloads: rules tests use the tracked Book 1 fixture. Additional comparisons against local Book 2–12 XHTML run only when those sources exist. This optional source verification was performed for this release; its absence in another clone does not mean it was performed there.
 
 Browser smoke checks: 390×844, 375×667, 320×568; all six tabs; carried/stored pagination; full supply submission and capacity errors; armour/Sommerswerd moves; protected/unprotected Mindblast with fixed rolls; Undo; reload; export/import. Setup/history dialogs may scroll vertically. Physical-phone testing and arbitrary enlarged accessibility text were not part of release verification.
 
@@ -102,4 +108,4 @@ For an authorized release: verify clean/understood worktree and remote head, run
 
 GitHub connector tools were used to publish Git objects/ref updates; the signed-in GitHub Releases page supplied tag/release creation. `gh` was unavailable and was not installed. Future developers may use their configured Git credentials/CLI instead. If connector publishing is used, include new documentation and tests, use a base tree, and check the branch's expected SHA before updating. Sync the local checkout without discarding unrelated work.
 
-No unfinished approved feature remains at `book7v1`. Book 6 follows the approved discussion; see [BOOK6-REVIEW.md](BOOK6-REVIEW.md). The remaining roadmap is [BOOKS6-20-PLAN.md](BOOKS6-20-PLAN.md). Book 7 now has its own audit and verification in [BOOK7-REVIEW.md](BOOK7-REVIEW.md). Before Book 8, audit its setup/training/progression individually and discuss differences that change layout or major behavior. Do not extrapolate higher-rank powers from the Book 6 selection counts. For future fixes, add focused tests for changed state transitions and verify affected phone layouts. Keep documentation clear about local implementation versus published release.
+No unfinished approved feature remains at `book12v1`. Book 6 follows the approved discussion; see [BOOK6-REVIEW.md](BOOK6-REVIEW.md). The remaining roadmap is [BOOKS6-20-PLAN.md](BOOKS6-20-PLAN.md). Book 7 now has its own audit and verification in [BOOK7-REVIEW.md](BOOK7-REVIEW.md). Before Book 13, audit its fresh/continued Grand Master transition and ten-slot backpack individually and discuss differences that change layout or major behavior. Do not extrapolate higher-rank powers from the Book 6 selection counts. For future fixes, add focused tests for changed state transitions and verify affected phone layouts. Keep documentation clear about local implementation versus published release.

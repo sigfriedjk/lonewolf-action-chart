@@ -2,6 +2,15 @@
 
 Tags are immutable snapshots; a later commit on `main` may contain further changes. Follow each release link for its exact Git commit.
 
+## [book12v1](https://github.com/sigfriedjk/lonewolf-action-chart/tree/book12v1) — 16 October 2026
+
+- Books 8–12 with independent fresh and continued charts, correct maps and supplies, preserved wounds, equipment, arrows, notes, and player-confirmed progression.
+- Explicit Standard/Tutelary/Scion-kai Weaponmastery choices; no automatic rank-based upgrades or stacking with inherited Weaponskill.
+- Player-selected Mindblast/Psi-surge and Archmaster attacks, per-round surge EP costs, immunity handling, round-history breakdown, and Undo.
+- Adjusted missile rolls with selected Bow/Mentora bonuses and section modifiers; player-triggered Archmaster Curing with eligibility reminders and no simulated cooldown.
+- Book 11 fresh setup grants two Meals and six equipment choices; continuation grants no new gold or equipment. Book 12 offers six choices including four Meals.
+- Twelve-chart saves, old-save defaults, export/import, reload and Undo verified. Nine Node suites and local Book 2–12 source comparisons pass; real browser flows pass at 390×844, 375×667, and 320×568. See [BOOKS8-12-REVIEW.md](BOOKS8-12-REVIEW.md).
+
 ## [book7v1](https://github.com/sigfriedjk/lonewolf-action-chart/tree/book7v1) — 15 October 2026
 
 - Books 6–7 with independent fresh and continued charts, their own starting supplies, maps, and player-confirmed history.

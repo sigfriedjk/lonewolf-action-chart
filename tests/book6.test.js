@@ -109,7 +109,7 @@ click('undo');assert.equal(run('state.arrows'),3);
 const valid=run('JSON.stringify(campaign)');run('campaign=load();state=campaign.books[campaign.activeBook];render();');assert.equal(run('state.arrows'),3);assert.equal(run('state.loreCircles[0]'),'fire');
 click('export');assert.deepEqual(C.validateSave(JSON.parse(exported)),C.validateSave(JSON.parse(valid)));
 const beforeInvalid=run('JSON.stringify(campaign)');submit('resource-form',{amount:'-1'},{key:'arrows'});assert.equal(run('JSON.stringify(campaign)'),beforeInvalid);
-click('rules');assert.doesNotMatch(element('#dialog').innerHTML,/undefined/);assert.match(element('#dialog').innerHTML,/Psi-surge is manual/);
+click('rules');assert.doesNotMatch(element('#dialog').innerHTML,/undefined/);assert.match(element('#dialog').innerHTML,/Choose your attack/);
 click('switch-book',{book:'5'});assert.equal(run('state.notes'),'Keep the source');click('undo');assert.equal(run('state.book'),6);
 async function importFile(value){await elementListeners.get('#import-file:change')({target:{files:[{size:1000,text:async()=>value}],value:'file'}});}
 async function finish(){

@@ -1,6 +1,6 @@
 # Books 6–20 completion plan
 
-Planning review: 14 October 2026. Release checkpoint: Books 1–7 (`book7v1`, 15 October 2026). Book 6 and then Book 7 were approved and implemented. This plan covers Lone Wolf's original Books 1–20 arc; Books 21 onward are outside this scope. The initial documentation task did not authorize implementation/release; the later approval covered Book 6 implementation. The 15 October request subsequently authorized Book 7, included in the authorized `book7v1` integration; see [BOOK7-REVIEW.md](BOOK7-REVIEW.md).
+Planning review: 14 October 2026. Release checkpoint: Books 1–12 (`book12v1`, 16 October 2026). Book 6 and then Book 7 were approved and implemented. This plan covers Lone Wolf's original Books 1–20 arc; Books 21 onward are outside this scope. The initial documentation task did not authorize implementation/release; the later approval covered Book 6 implementation. The 15 October request subsequently authorized Book 7, included in the authorized `book7v1` integration; see [BOOK7-REVIEW.md](BOOK7-REVIEW.md).
 
 ## Product direction
 
@@ -63,6 +63,10 @@ Jon approved the concrete Book 6 implementation proposal, then approved the comp
 - Psi-surge, Healing/Curing, shot modifiers, unusual encounters, and section effects stay manual with explicit guidance. Overlapping Kai/Magnakai mastery bonuses do not stack.
 - Book 6 uses a version 2 character inside a version 3 campaign stored under a new v3 key, retaining prior storage. All new records round-trip; old charts keep their values and version 1 structure. Publishing/tagging is not authorized by this approval.
 
+### Continuation decisions — 16 October 2026
+
+Jon authorized work through Book 12, stopping for layout or implementation questions. Improvements should be explicitly selected by the player and included in arithmetic, never inferred from rank/book/skill count. Approved: a Standard/Tutelary/Scion-kai selector in the existing Mastery dialog, saved and carried forward with Undo. Books 8–12 are implemented and included in the authorized `book12v1` release. See [BOOKS8-12-REVIEW.md](BOOKS8-12-REVIEW.md) for the audit and the approved missile, psychic, and healing controls. Jon approved these explicit choices/actions; no automatic rank-based improvement or cooldown simulation is added.
+
 ## Delivery sequence
 
 ### 1. Establish the shared foundation with Book 6
@@ -85,17 +89,17 @@ Suggested review batches: 14–16, 17–18, 19–20, implemented and checked one
 
 ## Book checklist
 
-Books 6–7 have completed focused audits and local implementations, documented in their reviews. All other rows remain **planned; detailed source audit and implementation pending**. Each needs the same source/setup/save/manual-use checks above, not merely a menu entry.
+Books 6–12 have completed focused audits and implementations, documented in their reviews. All other rows remain **planned; detailed source audit and implementation pending**. Each needs the same source/setup/save/manual-use checks above, not merely a menu entry.
 
 | Book | Title | Local source | Milestone |
 | --- | --- | --- | --- |
 | 6 | The Kingdoms of Terror | `06tkot.htm` | Audited and implemented; approved Magnakai foundation; book7v1 |
 | 7 | Castle Death | `07cd.htm` | Audited and implemented; Magnakai continuation and manual Primate guidance; book7v1 |
-| 8 | The Jungle of Horrors | `08tjoh.htm` | Magnakai continuation |
-| 9 | The Cauldron of Fear | `09tcof.htm` | Magnakai continuation |
-| 10 | The Dungeons of Torgar | `10tdot.htm` | Magnakai continuation |
-| 11 | The Prisoners of Time | `11tpot.htm` | Magnakai continuation |
-| 12 | The Masters of Darkness | `12tmod.htm` | Magnakai completion and transition audit |
+| 8 | The Jungle of Horrors | `08tjoh.htm` | Implemented; explicit mastery improvement; book12v1 |
+| 9 | The Cauldron of Fear | `09tcof.htm` | Implemented; Principalin guidance; book12v1 |
+| 10 | The Dungeons of Torgar | `10tdot.htm` | Implemented; Mentora guidance, Alether supply; book12v1 |
+| 11 | The Prisoners of Time | `11tpot.htm` | Implemented; fresh/continued supplies differ; book12v1 |
+| 12 | The Masters of Darkness | `12tmod.htm` | Implemented; explicit Archmaster psychic/Curing helpers; book12v1; Book 13 transition pending |
 | 13 | The Plague Lords of Ruel | `13tplor.htm` | Grand Master foundation and discussion checkpoint |
 | 14 | The Captives of Kaag | `14tcok.htm` | Grand Master continuation |
 | 15 | The Darke Crusade | `15tdc.htm` | Grand Master continuation |

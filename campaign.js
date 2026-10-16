@@ -1,4 +1,4 @@
-/* Save migration and Books 1–7 setup. Shared by the browser and Node tests. */
+/* Save migration and Books 1–12 setup. Shared by the browser and Node tests. */
 (function (root) {
   'use strict';
   const R = typeof module !== 'undefined' ? require('./rules.js') : root.LWRules;
@@ -11,7 +11,12 @@
     4:{title:'The Chasm of Doom',slug:'04tcod',sections:350,supplyLimit:6,supplies:['Warhammer','Dagger','2 Potions of Laumspur','Sword','Spear','5 Special Rations','Mace','Chainmail Waistcoat','Shield'],map:'Map of the Southlands',gifts:['Badge of Rank']},
     5:{title:'Shadow on the Sand',slug:'05sots',sections:400,supplyLimit:4,supplies:['Dagger','Potion of Laumspur','Sword','Spear','2 Special Rations','Mace','Shield'],map:'Map of Vassagonia',gifts:[]},
     6:{title:'The Kingdoms of Terror',slug:'06tkot',series:'Magnakai',sections:350,supplyLimit:5,supplies:['Sword','Potion of Laumspur','Warhammer','Bow','Quiver','4 Special Rations','Quarterstaff','Padded Leather Waistcoat','Rope','Dagger','Tinderbox','Axe'],map:'Map of the Stornlands',gifts:[]},
-    7:{title:'Castle Death',slug:'07cd',series:'Magnakai',sections:350,supplyLimit:5,supplies:['Sword','Bow','Quiver','Rope','Potion of Laumspur','Lantern','Mace','3 Meals','Dagger','3 Fireseeds'],map:'Map of Dessi',gifts:[]}
+    7:{title:'Castle Death',slug:'07cd',series:'Magnakai',sections:350,supplyLimit:5,supplies:['Sword','Bow','Quiver','Rope','Potion of Laumspur','Lantern','Mace','3 Meals','Dagger','3 Fireseeds'],map:'Map of Dessi',gifts:[]},
+    8:{title:'The Jungle of Horrors',slug:'08tjoh',series:'Magnakai',sections:350,supplyLimit:5,supplies:['Sword','Bow','Quiver','Rope','Potion of Laumspur','Lantern','Mace','3 Meals','Dagger','3 Fireseeds'],map:'Map of the Danarg',gifts:[]},
+    9:{title:'The Cauldron of Fear',slug:'09tcof',series:'Magnakai',sections:350,supplyLimit:5,supplies:['Sword','Bow','Quiver','Rope','Potion of Laumspur','Lantern','Mace','3 Meals','Dagger','3 Fireseeds'],map:'Map of Anari',gifts:[]},
+    10:{title:'The Dungeons of Torgar',slug:'10tdot',series:'Magnakai',sections:350,supplyLimit:5,supplies:['Sword','Bow','Quiver','Rope','Potion of Laumspur','Lantern','Mace','3 Meals','Dagger','Potion of Alether'],map:'Map of Ghatan',gifts:[]},
+    11:{title:'The Prisoners of Time',slug:'11tpot',series:'Magnakai',sections:350,supplyLimit:6,supplies:['Sword','Bow','Quiver','Rope','Potion of Laumspur','Lantern','Mace','3 Meals','Dagger'],map:null,gifts:[],freshMeals:2,noContinuedSupplies:true},
+    12:{title:'The Masters of Darkness',slug:'12tmod',series:'Magnakai',sections:350,supplyLimit:6,supplies:['Sword','Bow','Quiver','Rope','Potion of Laumspur','Lantern','Mace','4 Meals','Dagger','Quarterstaff','Axe'],map:'Map of the Darklands',gifts:[]}
   };
   const completed = s => s.completedBooks ?? (s.book===2 && s.continued ? [1] : []);
   const limit = s => R.isMagnakai(s) ? 3 + completed(s).filter(book=>book>=6).length : 5 + completed(s).length;
@@ -45,6 +50,12 @@
       if(Array.isArray(s.combat.rounds))s.combat.rounds=s.combat.rounds.map(r=>r && {...r,mindblastLoss:r.mindblastLoss ?? 0});
     }
     const higher=R.isMagnakai(s);
+    if(higher && s.psychicMode===undefined)s.psychicMode='legacy';
+    if(higher && (typeof s.psychicMode!=='string' || !Object.hasOwn(R.psychicModes,s.psychicMode)))throw new Error('Invalid psychic mode.');
+    if(higher && s.lastAdjustedRoll===undefined)s.lastAdjustedRoll=null;
+    if(higher && s.lastAdjustedRoll!==null){const r=s.lastAdjustedRoll;if(!r || r.total!==R.adjustedRoll(r.roll,r.modifier,r.bow,r.mentora).total)throw new Error('Invalid adjusted roll.');s.lastAdjustedRoll=R.adjustedRoll(r.roll,r.modifier,r.bow,r.mentora);}
+    if(higher && s.weaponmasteryLevel===undefined)s.weaponmasteryLevel='standard';
+    if(higher && (typeof s.weaponmasteryLevel!=='string' || !Object.hasOwn(R.weaponmasteryLevels,s.weaponmasteryLevel)))throw new Error('Invalid Weaponmastery level.');
     const uniqueList = (values,allowed) => Array.isArray(values) && values.length<=allowed.length && new Set(values).size===values.length && values.every(v=>allowed.includes(v));
     if (higher && (!uniqueList(s.magnakai,R.magnakai.map(d=>d[0])) || !uniqueList(s.masteries,R.weaponTypes(s)) || !uniqueList(s.loreCircles,R.loreCircles.map(c=>c.id)) || !integer(s.arrows,0,9999))) throw new Error('The Magnakai records are invalid.');
     if (s.version!==(higher?2:1) || !Number.isInteger(s.book) || !books[s.book] || typeof s.continued!=='boolean' ||
@@ -59,23 +70,23 @@
         (s.equipped===-2 && !s.special.some(v=>v.name==='Sommerswerd')) ||
         !Array.isArray(s.disciplines) || s.disciplines.length>(higher?10:limit(s)) || new Set(s.disciplines).size!==s.disciplines.length ||
         !s.disciplines.every(v=>R.disciplines.some(d=>d[0]===v)) || !R.weapons.includes(s.mastery) ||
-        !(s.lastRoll===null || integer(s.lastRoll,0,9))) throw new Error('This file is not a valid Book 1–7 Action Chart.');
+        !(s.lastRoll===null || integer(s.lastRoll,0,9))) throw new Error('This file is not a valid Book 1–12 Action Chart.');
     if (s.ep>R.maxEndurance(s)) throw new Error('Endurance exceeds its maximum.');
     if (s.combat!==null) {
       const c = s.combat;
       if (!c || !text(c.name,80) || !integer(c.cs,0,99) || !integer(c.maxEP,1,999) || !integer(c.ep,0,c.maxEP) ||
           typeof c.immune!=='boolean' || typeof c.undead!=='boolean' || !integer(c.mindblastDamage,0,99) || !integer(c.modifier,-99,99) ||
           !['active','victory','defeat','evaded'].includes(c.status) || (c.status==='active' && (!s.ep || !c.ep)) ||
-          !Array.isArray(c.rounds) || c.rounds.length>1000 || !c.rounds.every(r=>r && integer(r.roll,0,9) && integer(r.ratio,-20200,20200) && integer(r.heroLoss,0,10000) && integer(r.enemyLoss,0,999) && integer(r.mindblastLoss,0,Math.min(99,r.heroLoss)) && typeof r.evade==='boolean')) throw new Error('The combat record is invalid.');
+          !Array.isArray(c.rounds) || c.rounds.length>1000 || !c.rounds.every(r=>r && integer(r.roll,0,9) && integer(r.ratio,-20200,20200) && integer(r.heroLoss,0,10000) && integer(r.enemyLoss,0,999) && integer(r.mindblastLoss,0,Math.min(99,r.heroLoss)) && (r.surgeLoss===undefined || integer(r.surgeLoss,0,Math.min(2,r.heroLoss-r.mindblastLoss))) && typeof r.evade==='boolean')) throw new Error('The combat record is invalid.');
     }
     const clean = newCharacter();
     for (const key of Object.keys(clean)) clean[key] = clone(s[key]);
-    if (higher) for (const key of ['magnakai','masteries','loreCircles','arrows']) clean[key]=clone(s[key]);
+    if (higher) for (const key of ['magnakai','masteries','loreCircles','arrows','weaponmasteryLevel','psychicMode','lastAdjustedRoll']) clean[key]=clone(s[key]);
     clean.special = s.special.map(({name,effect,ep,cs})=>({name,effect,ep,cs}));
     clean.storedSpecial = s.storedSpecial.map(({name,effect,ep,cs})=>({name,effect,ep,cs}));
     if (s.combat) {
       const {name,cs,maxEP,ep,modifier,immune,undead,mindblastDamage,status,rounds} = s.combat;
-      clean.combat = {name,cs,maxEP,ep,modifier,immune,undead,mindblastDamage,status,rounds:rounds.map(({roll,ratio,heroLoss,enemyLoss,mindblastLoss,evade})=>({roll,ratio,heroLoss,enemyLoss,mindblastLoss,evade}))};
+      clean.combat = {name,cs,maxEP,ep,modifier,immune,undead,mindblastDamage,status,rounds:rounds.map(({roll,ratio,heroLoss,enemyLoss,mindblastLoss,evade,surgeLoss})=>({roll,ratio,heroLoss,enemyLoss,mindblastLoss,evade,...(surgeLoss===undefined?{}:{surgeLoss})}))};
     }
     return clean;
   }
@@ -137,16 +148,17 @@
     s.book=book;s.section=1;s.combat=null;s.lastRoll=null;
     if (R.isMagnakai(s)) {
       s.version=2;
-      if (!source || !R.isMagnakai(source)) {s.magnakai=[];s.masteries=[];s.loreCircles=[];s.arrows=0;}
+      if (!source || !R.isMagnakai(source)) {s.magnakai=[];s.masteries=[];s.loreCircles=[];s.arrows=0;s.weaponmasteryLevel='standard';s.psychicMode='legacy';s.lastAdjustedRoll=null;}
       if (source && options.fullKai===true) {
         s.disciplines=R.disciplines.map(d=>d[0]);s.completedBooks=[...new Set([1,2,3,4,5,...s.completedBooks])].sort((a,b)=>a-b);
       }
     }
-    if (!Number.isInteger(options.gold) || options.gold<10 || options.gold>19) throw new Error('Royal gold must be 10–19 Crowns.');
-    s.gold+=options.gold;
+    const noSupplies=source && setup.noContinuedSupplies;
+    if(!noSupplies){if (!Number.isInteger(options.gold) || options.gold<10 || options.gold>19) throw new Error('Royal gold must be 10–19 Crowns.');s.gold+=options.gold;}
+    if(!source)s.meals+=setup.freshMeals || 0;
     const carriedSpecialCount=source?s.special.length:0;
     // Retain old maps, replace none of the character's existing possessions.
-    for (const name of [setup.map,...setup.gifts]) {
+    for (const name of [setup.map,...setup.gifts].filter(Boolean)) {
       if (!s.special.some(v=>v.name===name)) s.special.push({name,effect:name==='Seal of Hammerdal'?'Ring worn on your right hand':name==='Badge of Rank'?'Worn on your tunic sleeve':'Carried map',ep:0,cs:0});
     }
     const store=options.storeSpecial ?? [];
@@ -163,11 +175,14 @@
     s.weapons=s.weapons.filter((_,i)=>keep.includes(i));
     s.equipped=originalEquipped===-2 ? -2 : keep.slice().sort((a,b)=>a-b).indexOf(originalEquipped);
     const items=options.items ?? [];
+    if(noSupplies && items.length)throw new Error('Continued Book 11 entry has no starting supply choices.');
     if (!Array.isArray(items) || items.length>setup.supplyLimit || new Set(items).size!==items.length || !items.every(v=>setup.supplies.includes(v))) throw new Error(`Choose up to ${setup.supplyLimit===2?'two':setup.supplyLimit} different ${book===2?'Royal Armoury':'starting supply'} items.`);
     for (const item of items) {
       if (R.weaponTypes(s).includes(item)) s.weapons.push(item);
       else if (['Two Meals','Special Rations','2 Special Rations','4 Special Rations','5 Special Rations'].includes(item)) s.meals+=item==='Special Rations'?1:item==='5 Special Rations'?5:item==='4 Special Rations'?4:2;
       else if (item==='3 Meals') s.meals+=3;
+      else if (item==='4 Meals') s.meals+=4;
+      else if (item==='Potion of Alether')s.backpack.push(item);
       else if (item==='2 Potions of Laumspur') s.backpack.push('Potion of Laumspur','Potion of Laumspur');
       else if (R.potionRecovery(item)) s.backpack.push(item);
       else if (['Rope','Tinderbox','Lantern'].includes(item)) s.backpack.push(item);
