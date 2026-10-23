@@ -55,7 +55,7 @@ const elements=new Map(),listeners=new Map();
 const initial=JSON.stringify({version:3,activeBook:8,books:{8:C.startBook(8,null,{...options,items:['Sword']})}});
 const storage=new Map([['lone-wolf-action-chart-v3',initial]]);
 function element(key){if(!elements.has(key))elements.set(key,{dataset:{},classList:{add(){},remove(){}},addEventListener(){},focus(){},close(){},showModal(){},scrollTop:0});return elements.get(key);}
-const context=vm.createContext({window:{LWRules:R,LWCampaign:C,addEventListener(){}},document:{querySelector:element,addEventListener(type,fn){listeners.set(type,fn);}},localStorage:{getItem:key=>storage.get(key)??null,setItem:(key,value)=>storage.set(key,value)},crypto:{getRandomValues(a){a[0]=5;return a;}},matchMedia:()=>({matches:false}),setTimeout:()=>0,clearTimeout(){},console});
+const context=vm.createContext({window:{LWRules:R,LWCampaign:C,LWSaves:require('../saves.js'),addEventListener(){}},document:{querySelector:element,addEventListener(type,fn){listeners.set(type,fn);}},localStorage:{getItem:key=>storage.get(key)??null,setItem:(key,value)=>storage.set(key,value)},crypto:{getRandomValues(a){a[0]=5;return a;}},matchMedia:()=>({matches:false}),setTimeout:()=>0,clearTimeout(){},console});
 context.FormData=class{constructor(form){this.values=form.values;}get(key){const v=this.values[key];return Array.isArray(v)?v[0]??null:v??null;}getAll(key){const v=this.values[key];return v===undefined?[]:Array.isArray(v)?v:[v];}has(key){return Object.hasOwn(this.values,key);}};
 const run=code=>vm.runInContext(code,context);
 run(fs.readFileSync(require.resolve('../app.js'),'utf8'));

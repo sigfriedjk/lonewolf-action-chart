@@ -12,9 +12,9 @@ Read [README.md](README.md) for product direction and [DEVELOPMENT.md](DEVELOPME
 
 ## Protect existing records
 
-- Preserve independent charts, wounds, safekeeping, migration, export/import, and Undo. Copying must not mutate a source chart or grant supplies again when reopening an existing chart.
+- Preserve current charts, optional immutable checkpoints, wounds, safekeeping, migration, export/import, and Undo. Copying must not mutate a source chart or grant supplies again when reopening an existing chart.
 - Never infer earned skills, mastery improvements, checked Lore-circles, applied Grand Master advances, or special psychic attacks from book/rank/skill counts. Keep inherited training separate. Each bonus has one owner; replacement bonuses do not stack.
-- Retain old storage keys and chart versions. After a storage upgrade, Undo and old imports must still write the newest active key. Corruption must not silently restore stale progress. Validate every new field through loading, carryover, export/import, and Undo.
+- Retain old storage keys and chart versions. Use the new current-book record for all writes, including Undo and old imports; old campaign keys remain untouched. Corruption must not silently restore stale progress or overwrite the broken record. Validate every new field through links, loading, checkpoints, carryover, export/import, and Undo. Links and normal exports contain only one book. Earlier charts are optional; continuation uses the current chart. Incoming links require a preview before replacement.
 - Existing inventory and early-book progression restrictions are current behavior, not requirements to expand enforcement. Discuss broad changes; keep UI, setup, and import validation consistent.
 - Preserve unrelated workspace changes. Read the actual repository/remote head before describing supported behavior; an attached checkout can lag the deployed site.
 
@@ -22,6 +22,6 @@ Read [README.md](README.md) for product direction and [DEVELOPMENT.md](DEVELOPME
 
 Check new book rules against that book's Project Aon sources and footnotes. Keep downloads, narrative, illustrations, adventure backups, credentials, screenshots, and temporary browser scripts out of commits and deployment.
 
-Run affected tests while developing. Before an authorized release, run all fourteen Node suites, three app syntax checks, shell syntax, and `git diff --check` using [DEVELOPMENT.md](DEVELOPMENT.md#automated-checks). Verify changed UI with real actions at current phone and desktop sizes. State separately whether source comparisons, live browser checks, or physical-device checks actually ran.
+Run affected tests while developing. Before an authorized release, run all sixteen Node suites, four app syntax checks, shell syntax, and `git diff --check` using [DEVELOPMENT.md](DEVELOPMENT.md#automated-checks). Verify changed UI with real actions at current phone and desktop sizes. State separately whether source comparisons, live browser checks, or physical-device checks actually ran.
 
 Update asset query versions in `index.html` when browser assets change. Keep README product-focused and maintain the other three documents as needed. Publish/tag only when the current request/session authorizes it; historical release approvals are not standing authorization for future releases. Never move an existing tag.

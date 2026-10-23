@@ -1,6 +1,7 @@
 /* Grand Master transition: explicit bonuses, independent records, and v4 storage. */
 const assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm');
 const C=require('../campaign.js'),R=require('../rules.js');
+const readSaved=require('./saved-record.js');
 const clone=s=>JSON.parse(JSON.stringify(s));
 const opts={cs:30,ep:35,gold:24,items:[]};
 const fresh=()=>C.startBook(13,null,opts);
@@ -93,7 +94,7 @@ if(fs.existsSync(source)){
 function harness(initial){
   const elements=new Map(),listeners=new Map(),storage=new Map(initial);
   function element(key){if(!elements.has(key))elements.set(key,{dataset:{},classList:{add(){},remove(){}},addEventListener(type,fn){listeners.set(key+':'+type,fn);},focus(){},close(){},showModal(){},scrollTop:0});return elements.get(key);}
-  const context=vm.createContext({window:{LWRules:R,LWCampaign:C,addEventListener(){}},document:{querySelector:element,addEventListener(type,fn){listeners.set(type,fn);}},localStorage:{getItem:key=>storage.get(key)??null,setItem:(key,value)=>storage.set(key,value)},crypto:{getRandomValues(a){a[0]=5;return a;}},matchMedia:()=>({matches:false}),setTimeout:()=>0,clearTimeout(){},console});
+  const context=vm.createContext({window:{LWRules:R,LWCampaign:C,LWSaves:require('../saves.js'),addEventListener(){}},document:{querySelector:element,addEventListener(type,fn){listeners.set(type,fn);}},localStorage:{getItem:key=>storage.get(key)??null,setItem:(key,value)=>storage.set(key,value)},crypto:{getRandomValues(a){a[0]=5;return a;}},matchMedia:()=>({matches:false}),setTimeout:()=>0,clearTimeout(){},console});
   context.FormData=class{constructor(form){this.values=form.values;}get(key){const v=this.values[key];return Array.isArray(v)?v[0]??null:v??null;}getAll(key){const v=this.values[key];return v===undefined?[]:Array.isArray(v)?v:[v];}has(key){return Object.hasOwn(this.values,key);}};
   const run=code=>vm.runInContext(code,context);run(fs.readFileSync(require.resolve('../app.js'),'utf8'));
   const submit=(id,values,dataset={})=>listeners.get('submit')({target:{id,values,dataset},preventDefault(){}});
@@ -104,7 +105,7 @@ const key3='lone-wolf-action-chart-v3',key4='lone-wolf-action-chart-v4';
 const oldSave=JSON.stringify({version:3,activeBook:12,books:{12:src}});
 const h=harness([[key3,oldSave]]);
 h.run('bookSetupDialog(13,true)');assert.match(h.elements.get('#dialog').innerHTML,/fullMagnakai/);
-h.submit('book2-form',{completed:'on',gold:'24',keep:'0'},{book:'13',source:'12',continuing:'true'});
+h.submit('book2-form',{checkpoint:'on',completed:'on',gold:'24',keep:'0'},{book:'13',source:'12',continuing:'true'});
 assert.equal(h.run('state.book'),13);assert.equal(h.run('campaign.version'),4);assert.equal(h.storage.get(key3),oldSave);
 h.run('switchView("gear")');assert.equal((h.elements.get('#main').innerHTML.match(/class="item(?: |")/g)||[]).length,10);
 assert.doesNotMatch(h.elements.get('#main').innerHTML,/class="pager"/);
@@ -120,7 +121,7 @@ h.submit('adjusted-roll-form',{roll:'9',modifier:'-1',bow:'on',mentora:'on',gran
 h.run('state.ep=8;persist()');h.click('deliverance-cure');assert.equal(h.run('state.ep'),28);h.run('undo()');assert.equal(h.run('state.ep'),8);
 h.run('campaign=load();state=campaign.books[campaign.activeBook]');assert.equal(h.run('state.psychicMode'),'kaiSurge');assert.equal(h.run('state.lastAdjustedRoll.grandBow'),true);
 h.run(`change(()=>{campaign=C.validateSave(${oldSave});state=campaign.books[campaign.activeBook]})`);
-assert.equal(JSON.parse(h.storage.get(key4)).activeBook,12);assert.equal(h.run('load().activeBook'),12);assert.equal(h.storage.get(key3),oldSave);
+assert.equal(readSaved(h.storage).activeBook,12);assert.equal(h.run('load().activeBook'),12);assert.equal(h.storage.get(key3),oldSave);
 h.run('undo()');assert.equal(h.run('state.book'),13);
 const corrupt=harness([[key4,'{bad'],[key3,oldSave]]);assert.equal(corrupt.run('state.book'),1);assert.match(corrupt.run('recoveryNotice'),/could not be loaded/);
 console.log('Passed: Book 13 setup, inheritance, ten slots, explicit bonuses/costs, wounds, thirteen-chart saves, v4 upgrade/retention, real forms, reload and Undo.');

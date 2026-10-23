@@ -4,6 +4,8 @@ const fs=require('node:fs');
 const vm=require('node:vm');
 const R=require('../rules.js');
 const C=require('../campaign.js');
+const S=require('../saves.js');
+const readSaved=require('./saved-record.js');
 const clone=value=>JSON.parse(JSON.stringify(value));
 const options={cs:16,ep:24,gold:12,mastery:'Sword',items:[]};
 const fresh=()=>C.startBook(6,null,options);
@@ -84,7 +86,7 @@ function element(selector){
   if(!elements.has(selector))elements.set(selector,{dataset:{},classList:{add(){},remove(){}},addEventListener(type,fn){elementListeners.set(selector+':'+type,fn);},focus(){},close(){this.open=false;},showModal(){this.open=true;},scrollTop:0});
   return elements.get(selector);
 }
-const context=vm.createContext({window:{LWRules:R,LWCampaign:C,addEventListener(){}},document:{querySelector:element,addEventListener(type,fn){listeners.set(type,fn);},createElement(){return {click(){}};}},localStorage:{getItem:key=>storage.get(key)??null,setItem:(key,value)=>storage.set(key,value)},crypto:{getRandomValues(values){values[0]=5;return values;}},matchMedia:()=>({matches:false}),setTimeout:()=>0,clearTimeout(){},Blob:class{constructor(parts){exported=parts.join('');}},URL:{createObjectURL:()=>'',revokeObjectURL(){}},console});
+const context=vm.createContext({window:{LWRules:R,LWCampaign:C,LWSaves:S,addEventListener(){}},document:{querySelector:element,addEventListener(type,fn){listeners.set(type,fn);},createElement(){return {click(){}};}},localStorage:{getItem:key=>storage.get(key)??null,setItem:(key,value)=>storage.set(key,value)},crypto:{getRandomValues(values){values[0]=5;return values;}},matchMedia:()=>({matches:false}),setTimeout:()=>0,clearTimeout(){},Blob:class{constructor(parts){exported=parts.join('');}},URL:{createObjectURL:()=>'',revokeObjectURL(){}},console});
 context.FormData=class{constructor(form){this.values=form.values;}get(key){const value=this.values[key];return Array.isArray(value)?value[0]??null:value??null;}getAll(key){const value=this.values[key];return value===undefined?[]:Array.isArray(value)?value:[value];}has(key){return Object.hasOwn(this.values,key);}};
 const run=code=>vm.runInContext(code,context);
 run(fs.readFileSync(require.resolve('../app.js'),'utf8'));
@@ -93,10 +95,10 @@ function submit(id,values,dataset={}){listeners.get('submit')({target:{id,values
 function lore(id,checked){listeners.get('change')({target:{dataset:{lore:id},checked}});}
 run('bookSetupDialog(6,true)');assert.match(element('#dialog').innerHTML,/From Book 5/);
 assert.equal((element('#dialog').innerHTML.match(/name="item\d"/g)||[]).length,5);
-submit('book2-form',{completed:'on',gold:'12',keep:['0'],item1:'Quiver',item2:'Rope',item3:'Tinderbox',item4:'Padded Leather Waistcoat',item5:'Bow'},{book:'6',source:'5',continuing:'true'});
+submit('book2-form',{checkpoint:'on',completed:'on',gold:'12',keep:['0'],item1:'Quiver',item2:'Rope',item3:'Tinderbox',item4:'Padded Leather Waistcoat',item5:'Bow'},{book:'6',source:'5',continuing:'true'});
 assert.equal(run('state.book'),6);assert.equal(run('state.arrows'),6);assert.equal(run('state.weapons.length'),2);
 assert.equal(storage.get('lone-wolf-action-chart-v2'),original,'First Book 6 write retains the previous campaign');
-assert.equal(JSON.parse(storage.get('lone-wolf-action-chart-v3')).version,3);
+assert.equal(readSaved(storage).version,3);
 click('view',{view:'kai'});click('toggle-discipline',{name:'Weaponmastery'});click('toggle-discipline',{name:'Huntmastery'});
 assert.match(element('#main').innerHTML,/lore-ready/);
 lore('fire',true);assert.equal(run('state.ep'),23);assert.equal(run('R.maxEndurance(state)'),32);
@@ -107,23 +109,23 @@ submit('resource-form',{amount:'3'},{key:'arrows'});assert.equal(run('state.arro
 click('arrows');element('#resource-value').value='3';click('resource-adjust',{key:'arrows',value:'-1'});assert.equal(run('state.arrows'),2);
 click('undo');assert.equal(run('state.arrows'),3);
 const valid=run('JSON.stringify(campaign)');run('campaign=load();state=campaign.books[campaign.activeBook];render();');assert.equal(run('state.arrows'),3);assert.equal(run('state.loreCircles[0]'),'fire');
-click('export');assert.deepEqual(C.validateSave(JSON.parse(exported)),C.validateSave(JSON.parse(valid)));
+click('export');assert.deepEqual(C.validateCharacter(JSON.parse(exported)),C.validateSave(JSON.parse(valid)).books[JSON.parse(valid).activeBook]);
 const beforeInvalid=run('JSON.stringify(campaign)');submit('resource-form',{amount:'-1'},{key:'arrows'});assert.equal(run('JSON.stringify(campaign)'),beforeInvalid);
 click('rules');assert.doesNotMatch(element('#dialog').innerHTML,/undefined/);assert.match(element('#dialog').innerHTML,/Choose your attack/);
-click('switch-book',{book:'5'});assert.equal(run('state.notes'),'Keep the source');click('undo');assert.equal(run('state.book'),6);
+click('switch-book',{book:'5'});elementListeners.get('#confirm-import:click')();assert.equal(run('state.notes'),'Keep the source');click('undo');assert.equal(run('state.book'),6);
 async function importFile(value){await elementListeners.get('#import-file:change')({target:{files:[{size:1000,text:async()=>value}],value:'file'}});}
 async function finish(){
   const beforeBad=run('JSON.stringify(campaign)');await importFile('{"version":3}');assert.equal(run('JSON.stringify(campaign)'),beforeBad,'Invalid import never replaces campaign');
   submit('resource-form',{amount:'11'},{key:'arrows'});await importFile(valid);elementListeners.get('#confirm-import:click')();assert.equal(run('state.arrows'),3);
   click('undo');assert.equal(run('state.arrows'),11,'Undo restores campaign before import');
   await importFile(original);elementListeners.get('#confirm-import:click')();assert.equal(run('state.book'),5);
-  assert.equal(JSON.parse(storage.get('lone-wolf-action-chart-v3')).activeBook,5,'Importing old format does not leave stale modern saves');
+  assert.equal(readSaved(storage).activeBook,5,'Importing old format does not leave stale modern saves');
   run('campaign=load();state=campaign.books[campaign.activeBook];');assert.equal(run('state.book'),5);
   assert.equal(storage.get('lone-wolf-action-chart-v2'),original);
   submit('book2-form',{cs:'16',ep:'24',gold:'12',item1:'Bow',item2:'Quiver',item3:'4 Special Rations',item4:'Rope',item5:'Tinderbox'},{book:'6',continuing:'false'});
   assert.equal(run('state.arrows'),6);assert.equal(run('state.disciplines.length'),0);assert.equal(run('state.meals'),4);
-  const badSaved=JSON.parse(storage.get('lone-wolf-action-chart-v3'));badSaved.books[6].arrows=-1;
-  storage.set('lone-wolf-action-chart-v3',JSON.stringify(badSaved));run('campaign=load();state=campaign.books[campaign.activeBook];');
+  const badSaved=JSON.parse(storage.get(S.STORAGE_KEY));badSaved.current.arrows=-1;
+  storage.set(S.STORAGE_KEY,JSON.stringify(badSaved));run('campaign=load();state=campaign.books[campaign.activeBook];');
   assert.equal(run('state.book'),1,'Corrupt modern storage does not silently load stale old progress');
   assert.match(run('recoveryNotice'),/could not be loaded/);
   console.log('Passed: Book 6 fresh/continued setup, inheritance, supplies, mastery, psychic protection, Lore-circles, arrows, saves, original storage, actual forms, reload, export/import and Undo.');

@@ -4,6 +4,8 @@ const fs=require('node:fs');
 const vm=require('node:vm');
 const R=require('../rules.js');
 const C=require('../campaign.js');
+const S=require('../saves.js');
+const readSaved=require('./saved-record.js');
 const clone=value=>JSON.parse(JSON.stringify(value));
 const options={cs:16,ep:24,gold:12,mastery:'Sword',items:[]};
 const fresh=()=>C.startBook(7,null,options);
@@ -73,7 +75,7 @@ function element(selector){
   if(!elements.has(selector))elements.set(selector,{dataset:{},classList:{add(){},remove(){}},addEventListener(type,fn){elementListeners.set(selector+':'+type,fn);},focus(){},close(){this.open=false;},showModal(){this.open=true;},scrollTop:0});
   return elements.get(selector);
 }
-const context=vm.createContext({window:{LWRules:R,LWCampaign:C,addEventListener(){}},document:{querySelector:element,addEventListener(type,fn){listeners.set(type,fn);},createElement(){return {click(){}};}},localStorage:{getItem:key=>storage.get(key)??null,setItem:(key,value)=>storage.set(key,value)},crypto:{getRandomValues(values){values[0]=5;return values;}},matchMedia:()=>({matches:false}),setTimeout:()=>0,clearTimeout(){},Blob:class{constructor(parts){exported=parts.join('');}},URL:{createObjectURL:()=>'',revokeObjectURL(){}},console});
+const context=vm.createContext({window:{LWRules:R,LWCampaign:C,LWSaves:S,addEventListener(){}},document:{querySelector:element,addEventListener(type,fn){listeners.set(type,fn);},createElement(){return {click(){}};}},localStorage:{getItem:key=>storage.get(key)??null,setItem:(key,value)=>storage.set(key,value)},crypto:{getRandomValues(values){values[0]=5;return values;}},matchMedia:()=>({matches:false}),setTimeout:()=>0,clearTimeout(){},Blob:class{constructor(parts){exported=parts.join('');}},URL:{createObjectURL:()=>'',revokeObjectURL(){}},console});
 context.FormData=class{constructor(form){this.values=form.values;}get(key){const value=this.values[key];return Array.isArray(value)?value[0]??null:value??null;}getAll(key){const value=this.values[key];return value===undefined?[]:Array.isArray(value)?value:[value];}has(key){return Object.hasOwn(this.values,key);}};
 const run=code=>vm.runInContext(code,context);
 run(fs.readFileSync(require.resolve('../app.js'),'utf8'));
@@ -84,7 +86,7 @@ assert.match(element('#dialog').innerHTML,/Start Book 7/);assert.match(element('
 assert.equal((element('#dialog').innerHTML.match(/name="item\d"/g)||[]).length,5);
 submit('book2-form',{cs:'16',ep:'24',gold:'12',item1:'Bow',item2:'Quiver',item3:'3 Meals',item4:'Lantern',item5:'3 Fireseeds'},{book:'7',continuing:'false'});
 assert.equal(run('state.book'),7);assert.equal(run('state.arrows'),6);assert.equal(run('state.meals'),3);
-assert.equal(JSON.parse(storage.get('lone-wolf-action-chart-v3')).version,3);
+assert.equal(readSaved(storage).version,3);
 assert.equal(storage.get('lone-wolf-action-chart-v2'),original);
 click('discipline',{name:'Curing'});assert.match(element('#dialog').innerHTML,/Primate reference/);
 click('toggle-discipline',{name:'Curing'});click('mastery-dialog');assert.match(element('#dialog').innerHTML,/learning it later starts with three/);
@@ -94,9 +96,9 @@ const seedIndex=run('state.special.findIndex(item=>item.name==="Fireseed")');
 click('remove-item',{type:'special',index:String(seedIndex)});
 assert.equal(run('state.special.filter(item=>item.name==="Fireseed").length'),2);
 click('undo');assert.equal(run('state.special.filter(item=>item.name==="Fireseed").length'),3);
-run(`campaign.books[6]=${JSON.stringify(source)};`);
+run(`change(()=>{keepCheckpoint();state=C.validateCharacter(${JSON.stringify(source)});});`);
 click('continue-book',{book:'7'});assert.match(element('#dialog').innerHTML,/From Book 6/);
-submit('book2-form',{completed:'on',gold:'10',keep:['0'],item1:'Lantern'},{book:'7',source:'6',continuing:'true'});
+submit('book2-form',{checkpoint:'on',completed:'on',gold:'10',keep:['0'],item1:'Lantern'},{book:'7',source:'6',continuing:'true'});
 assert.equal(run('state.arrows'),2);assert.equal(run('state.magnakai.length'),3);assert.equal(run('state.ep'),18);
 click('view',{view:'kai'});assert.match(element('#main').innerHTML,/Magnakai \(3\/4\)/);
 click('toggle-discipline',{name:'Curing'});assert.equal(run('state.magnakai.length'),4);
@@ -104,8 +106,8 @@ submit('magnakai-form',{masteries:['Sword','Bow','Axe','Mace'],inherited:['Weapo
 const valid=run('JSON.stringify(campaign)');
 run('campaign=load();state=campaign.books[campaign.activeBook];render();');assert.equal(run('state.masteries.length'),4);
 assert.equal(run('state.loreCircles[0]'),'fire');assert.equal(run('state.arrows'),2);
-click('export');assert.deepEqual(C.validateSave(JSON.parse(exported)),C.validateSave(JSON.parse(valid)));
-click('switch-book',{book:'6'});assert.equal(run('state.magnakai.length'),3);click('undo');assert.equal(run('state.book'),7);
+click('export');assert.deepEqual(C.validateCharacter(JSON.parse(exported)),C.validateSave(JSON.parse(valid)).books[JSON.parse(valid).activeBook]);
+click('switch-book',{book:'6'});elementListeners.get('#confirm-import:click')();assert.equal(run('state.magnakai.length'),3);click('undo');assert.equal(run('state.book'),7);
 async function importFile(value){await elementListeners.get('#import-file:change')({target:{files:[{size:1000,text:async()=>value}],value:'file'}});}
 async function finish(){
   const beforeInvalid=run('JSON.stringify(campaign)');await importFile(JSON.stringify({...JSON.parse(valid),version:2}));
@@ -114,7 +116,7 @@ async function finish(){
   assert.equal(run('state.arrows'),2);click('undo');assert.equal(run('state.arrows'),13);
   await importFile(original);elementListeners.get('#confirm-import:click')();
   run('campaign=load();state=campaign.books[campaign.activeBook];');assert.equal(run('state.book'),1);
-  assert.equal(JSON.parse(storage.get('lone-wolf-action-chart-v3')).activeBook,1);
+  assert.equal(readSaved(storage).activeBook,1);
   console.log('Passed: Book 7 supplies, independent Magnakai continuation, manual progression, Primate guidance, all-seven-chart saves, actual setup forms, old-storage upgrade, reload, export/import, and Undo.');
 }
 finish().catch(error=>{console.error(error);process.exitCode=1;});
