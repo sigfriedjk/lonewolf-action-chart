@@ -3,6 +3,8 @@ const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const vm=require('node:vm');
 const C=require('../campaign.js');
+const S=require('../saves.js');
+const readSaved=require('./saved-record.js');
 const R=require('../rules.js');
 let clock=0,nextTimer=0;
 const timers=new Map(),listeners=new Map(),windowListeners=new Map(),elements=new Map(),storage=new Map();
@@ -16,7 +18,7 @@ function element(selector) {
   return elements.get(selector);
 }
 const add=(map,type,fn)=>map.set(type,[...(map.get(type)||[]),fn]);
-const context=vm.createContext({window:{LWRules:R,LWCampaign:C,addEventListener:(type,fn)=>add(windowListeners,type,fn)},
+const context=vm.createContext({window:{LWRules:R,LWCampaign:C,LWSaves:S,addEventListener:(type,fn)=>add(windowListeners,type,fn)},
   document:{querySelector:element,addEventListener:(type,fn)=>add(listeners,type,fn),visibilityState:'visible'},
   localStorage:{getItem:key=>storage.get(key)??null,setItem:(key,value)=>storage.set(key,value)},matchMedia:()=>({matches:false}),
   Date:{now:()=>clock},setTimeout:(fn,delay)=>{const id=++nextTimer;timers.set(id,{fn,at:clock+delay});return id;},clearTimeout:id=>timers.delete(id),console});
@@ -68,5 +70,5 @@ hold('Camouflage');hold('Tracking');assert.equal(selected().length,5);assert.equ
 run("state=C.startBook2(state,{gold:10,discipline:'Sixth Sense',items:[]});campaign.activeBook=2;persist();render();");
 assert.equal(selected().length,6);hold('Animal Kinship');assert.equal(selected().length,6);assert.equal(selected().includes('Animal Kinship'),false);
 hold('Sixth Sense');hold('Animal Kinship');assert.equal(selected().length,6);assert.equal(selected().includes('Animal Kinship'),true);
-const saved=C.validateSave(JSON.parse(storage.get('lone-wolf-action-chart-v2')));assert.equal(saved.books[2].disciplines.length,6);
+const saved=readSaved(storage);assert.equal(saved.books[2].disciplines.length,6);
 console.log('Passed: taps read without changing saves; held releases toggle once; ghost clicks, drags, cancellations, navigation, secondary touches, keyboard access, five/six-skill limits, and persistence.');

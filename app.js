@@ -1,12 +1,10 @@
-/* No dependencies, network calls, or build step. All adventure data stays in this browser. */
+/* No dependencies, network calls, or build step. Save links contain a single book chart. */
 'use strict';
 const R = window.LWRules;
 const C = window.LWCampaign;
-const STORAGE_KEY = 'lone-wolf-action-chart-v2';
-const MAGNAKAI_STORAGE_KEY = 'lone-wolf-action-chart-v3';
-const GRAND_MASTER_STORAGE_KEY = 'lone-wolf-action-chart-v4';
-let modernStorage = false, grandStorage = false;
-const LEGACY_KEY = 'lone-wolf-action-chart-v1';
+const S = window.LWSaves;
+const LEGACY_KEYS = ['lone-wolf-action-chart-v4','lone-wolf-action-chart-v3','lone-wolf-action-chart-v2','lone-wolf-action-chart-v1'];
+let checkpoints = [], storageProtected = false, urlPending = false, linkRequest = 0;
 const $ = selector => document.querySelector(selector);
 const escapeHTML = value => String(value).replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
 const clone = value => JSON.parse(JSON.stringify(value));
@@ -24,28 +22,36 @@ function randomNumber() {
 const newCharacter = C.newCharacter;
 function load() {
   try {
-    const grand = localStorage.getItem(GRAND_MASTER_STORAGE_KEY);
-    grandStorage = grand!==null;
-    const modern = grand ?? localStorage.getItem(MAGNAKAI_STORAGE_KEY);
-    modernStorage = modern!==null;
-    const saved = modern ?? (localStorage.getItem(STORAGE_KEY) || localStorage.getItem(LEGACY_KEY));
-    if (saved) return C.validateSave(JSON.parse(saved));
+    let saved = localStorage.getItem(S.STORAGE_KEY), input;
+    if (saved !== null) input = S.validateRecord(JSON.parse(saved));
+    else {
+      for (const key of LEGACY_KEYS) { saved = localStorage.getItem(key); if (saved !== null) break; }
+      if (saved !== null) input = S.importRecord(JSON.parse(saved));
+    }
+    if (input) { checkpoints = input.checkpoints; return S.campaign(input.current, checkpoints); }
   } catch {
-    recoveryNotice = 'Saved data could not be loaded. Import a backup from the menu if available.';
+    storageProtected = true;
+    recoveryNotice = 'Saved data could not be loaded. It has been left untouched. Import a backup or explicitly start a new adventure to save again.';
   }
-  return {version:2,activeBook:1,books:{1:newCharacter()}};
+  return S.campaign(newCharacter());
 }
 let campaign = load();
 let state = campaign.books[campaign.activeBook];
 function persist() {
   campaign.books[campaign.activeBook] = state;
-  grandStorage ||= campaign.version===4 || Object.values(campaign.books).some(R.isGrandMaster);
-  modernStorage ||= campaign.version>=3 || Object.values(campaign.books).some(R.isAdvanced);
-  if(grandStorage)campaign.version=4;else if(modernStorage)campaign.version=3;
-  try { localStorage.setItem(grandStorage?GRAND_MASTER_STORAGE_KEY:modernStorage?MAGNAKAI_STORAGE_KEY:STORAGE_KEY,JSON.stringify(campaign)); storageAvailable = true; }
+  if (storageProtected || urlPending) {
+    $('#save-state').textContent = storageProtected ? 'Recovery required' : 'Review save link';
+    $('#save-state').dataset.unavailable = 'true';
+    return false;
+  }
+  try { localStorage.setItem(S.STORAGE_KEY,JSON.stringify(S.record(state,checkpoints))); storageAvailable = true; }
   catch { storageAvailable = false; }
-  $('#save-state').textContent = storageAvailable ? 'Saved on device' : 'Use Export to save';
-  $('#save-state').dataset.unavailable = String(!storageAvailable);
+  savedStatus();
+  return storageAvailable;
+}
+function savedStatus() {
+  $('#save-state').textContent = storageProtected ? 'Recovery required' : storageAvailable ? 'Saved on device' : 'Use Export to save';
+  $('#save-state').dataset.unavailable = String(storageProtected || !storageAvailable);
 }
 function toast(message) {
   clearTimeout(toastTimer); $('#toast').textContent = message; $('#toast').classList.add('show');
@@ -53,14 +59,21 @@ function toast(message) {
 }
 function change(fn, message) {
   campaign.books[campaign.activeBook] = state;
-  undoStack.push(clone(campaign)); if (undoStack.length > 30) undoStack.shift();
-  fn(state);
+  const previous = {campaign:clone(campaign),checkpoints:clone(checkpoints),storageProtected};
+  try { fn(state); }
+  catch (error) { campaign=previous.campaign;checkpoints=previous.checkpoints;state=campaign.books[campaign.activeBook];storageProtected=previous.storageProtected;throw error; }
+  undoStack.push(previous); if (undoStack.length > 30) undoStack.shift();
   if (state.combat?.status==='active' && state.ep===0) state.combat.status='defeat';
+  campaign = S.campaign(state,checkpoints);
   persist(); render(); if (message) toast(message);
 }
 function undo() {
   if (!undoStack.length) return toast('Nothing to undo yet.');
-  campaign = undoStack.pop(); state = campaign.books[campaign.activeBook]; persist(); render(); toast('Last change undone.');
+  const previous=undoStack.pop();campaign=previous.campaign;checkpoints=previous.checkpoints;storageProtected=previous.storageProtected;
+  state = campaign.books[campaign.activeBook]; persist(); render(); toast('Last change undone.');
+}
+function keepCheckpoint(chart=state,label=`Book ${chart.book} · Section ${chart.section}`) {
+  checkpoints=S.append(checkpoints,S.checkpoint(chart,label));
 }
 const icons = {
   chart:'<path d="M5 3h14v18H5zM9 7h6M9 11h6M9 15h3"/>',
@@ -170,7 +183,12 @@ function dialog(title, content) {
   $('#dialog').innerHTML = `<div class="dialog-heading"><h2 id="dialog-title">${title}</h2><button class="icon-button" data-action="close-dialog" aria-label="Close dialog">×</button></div>${content}`;
   if (!$('#dialog').open) $('#dialog').showModal();
 }
-function closeDialog() { $('#dialog').close(); }
+function closeDialog() {
+  linkRequest++;
+  if(urlPending) {urlPending=false;clearSaveParameter();persist();}
+  $('#dialog').close();
+}
+$('#dialog').addEventListener('cancel',closeDialog);
 function disciplineDialog(name) {
   const discipline=R.disciplineList(state).find(d=>d[0]===name);
   if (!discipline) return;
@@ -245,17 +263,16 @@ function booksDialog() {
   dialog('Your books',`<div class="menu-options">${Object.entries(C.books).map(([id,book])=>{
     const saved=campaign.books[id];
     return `<button class="secondary book-choice" data-action="switch-book" data-book="${id}" ${Number(id)===state.book?'aria-current="page"':''}><strong>Book ${id} · ${book.title}</strong><small>${saved?`Section ${saved.section} · ${saved.ep}/${R.maxEndurance(saved)} EP · ${R.selectedDisciplines(saved).length} disciplines${Number(id)===state.book?' · Current book':''}`:'Not started'}</small></button>`;
-  }).join('')}${next?`<button class="primary" data-action="continue-book" data-book="${next}" ${eligible?'':'disabled'}>Carry ${source?`Book ${source.book} character`:'a completed character'} into Book ${next} →</button><button class="secondary" data-action="fresh-book" data-book="${next}">Start Book ${next} with a fresh character</button>`:''}</div><p class="hint" style="margin-top:16px">Each book keeps its own chart, equipment, and notes.${next&&!eligible?' Choose all available Kai Disciplines and finish combat in an earlier book before continuing.':''}</p>`);
+  }).join('')}${next?`<button class="primary" data-action="continue-book" data-book="${next}" ${eligible?'':'disabled'}>Carry ${source?`Book ${source.book} character`:'a completed character'} into Book ${next} →</button><button class="secondary" data-action="fresh-book" data-book="${next}">Start Book ${next} with a fresh character</button>`:''}</div><p class="hint" style="margin-top:16px">Only the current book autosaves. Checkpoints keep earlier charts, equipment, and notes.${next&&!eligible?' Choose all available Kai Disciplines and finish combat in an earlier book before continuing.':''}</p>`);
 }
 function continuationSource(book) {
-  return Object.values(campaign.books).filter(s=>s.book<book && (R.isAdvanced({book}) || s.ep>0 && s.disciplines.length===C.limit(s) && s.combat?.status!=='active')).sort((a,b)=>b.book-a.book)[0] || null;
+  return state.book<book && (R.isAdvanced({book}) || state.ep>0 && state.disciplines.length===C.limit(state) && state.combat?.status!=='active') ? state : null;
 }
 function selectBook(book) {
   if (!C.books[book]) return toast('Unsupported book.');
   if (book>1 && !campaign.books[book]) return bookSetupDialog(book,Boolean(continuationSource(book)));
   if (book===campaign.activeBook) return closeDialog();
-  change(()=>{campaign.activeBook=book;state=campaign.books[book] || newCharacter();},`Book ${book} chart opened.`);
-  gearPage=roundPage=0;closeDialog();switchView('chart');
+  restoreDialog(campaign.books[book] || newCharacter());
 }
 function book2Dialog(continuing) { return bookSetupDialog(2,continuing); }
 function bookSetupDialog(book,continuing) {
@@ -270,20 +287,20 @@ function bookSetupDialog(book,continuing) {
   const defaultMeal=book===2?'Two Meals':book===3?'Special Rations':book===4?'5 Special Rations':'2 Special Rations';
   const supplyFields=`<div class="grid-two">${Array.from({length:setup.supplyLimit},(_,i)=>`<label>${supplyLabel} item ${i+1}<select name="item${i+1}">${supplyOptions(source?'':i===0?'Sword':i===1?defaultMeal:'')}</select></label>`).join('')}</div>`;
   const giftText=[setup.map,...setup.gifts].join(' and ');
-  dialog(continuing?`Continue into Book ${book}`:`Start Book ${book}`,`<form id="book2-form" data-book="${book}" data-source="${source?.book || ''}" data-continuing="${continuing}" class="form-stack"><p class="caption">${setup.title}${campaign.books[book]?` · This replaces your Book ${book} chart; Undo is available.`:''}</p>${source?`<div class="carry-summary"><strong>Your Book ${source.book} character travels with you.</strong><br>CS ${source.baseCS} · EP ${source.ep}/${R.maxEndurance(source)} · ${source.gold} Gold Crowns<br>${source.weapons.length} weapons · ${source.meals+source.backpack.length}/8 backpack slots · ${source.special.length} Special Items<br>${source.disciplines.map(escapeHTML).join(', ')}</div><p class="hint">Scores, current endurance, equipment, mastery, and journal are copied. Your Book ${source.book} chart stays saved. Book ${book} starts at section 1.</p><label class="checkbox-row"><input name="completed" type="checkbox" required>I successfully completed Book ${source.book}</label><label>Learn one new Kai Discipline<select name="discipline">${available.map(([name])=>`<option>${name}</option>`).join('')}</select></label>`:`<div class="grid-two"><label>Combat skill (10 + roll)<input name="cs" type="number" min="10" max="19" value="${10+randomNumber()}" required></label><label>Endurance (20 + roll)<input name="ep" type="number" min="20" max="29" value="${20+randomNumber()}" required></label></div><label>Weaponskill mastery<select name="mastery">${weaponOptions(R.weapons[randomNumber()],book)}</select></label><p class="hint">Choose five Kai Disciplines after starting. ${giftText} included.</p>`}<label>Royal gold (10 + roll)<input name="gold" type="number" min="10" max="19" value="${10+randomNumber()}" required></label><p class="hint">${source?'Added to your existing gold, including totals above 50.':'Your starting Gold Crowns.'} ${giftText} added to Special Items.</p>${source?.weapons.length?`<div><label>Keep carried weapons</label>${source.weapons.map((name,i)=>`<label class="checkbox-row"><input name="keep" type="checkbox" value="${i}" checked>${escapeHTML(name)}</label>`).join('')}<p class="hint">Uncheck a weapon to exchange it for a starting weapon. Your Book ${source.book} equipment is kept on its chart.</p></div>`:''}${supplyFields}<p class="hint">Choose different listed supplies; Meals and potion doses each use a backpack slot. Carried equipment counts toward the usual limits. Choose up to ${setup.supplyLimit} supplies. Use Store on the Special tab to leave carried items in safekeeping.</p><p class="section-error" id="form-error" role="alert"></p><div class="dialog-actions"><button class="secondary" type="button" data-action="books">Back</button><button class="primary">Begin Book ${book}</button></div></form>`);
+  dialog(continuing?`Continue into Book ${book}`:`Start Book ${book}`,`<form id="book2-form" data-book="${book}" data-source="${source?.book || ''}" data-continuing="${continuing}" class="form-stack"><p class="caption">${setup.title}${campaign.books[book]?` · This replaces your Book ${book} chart; Undo is available.`:''}</p>${source?`<div class="carry-summary"><strong>Your Book ${source.book} character travels with you.</strong><br>CS ${source.baseCS} · EP ${source.ep}/${R.maxEndurance(source)} · ${source.gold} Gold Crowns<br>${source.weapons.length} weapons · ${source.meals+source.backpack.length}/8 backpack slots · ${source.special.length} Special Items<br>${source.disciplines.map(escapeHTML).join(', ')}</div><p class="hint">Scores, current endurance, equipment, mastery, and journal are copied. Keep a checkpoint below to retain your Book ${source.book} chart. Book ${book} starts at section 1.</p><label class="checkbox-row"><input name="completed" type="checkbox" required>I successfully completed Book ${source.book}</label><label>Learn one new Kai Discipline<select name="discipline">${available.map(([name])=>`<option>${name}</option>`).join('')}</select></label>`:`<div class="grid-two"><label>Combat skill (10 + roll)<input name="cs" type="number" min="10" max="19" value="${10+randomNumber()}" required></label><label>Endurance (20 + roll)<input name="ep" type="number" min="20" max="29" value="${20+randomNumber()}" required></label></div><label>Weaponskill mastery<select name="mastery">${weaponOptions(R.weapons[randomNumber()],book)}</select></label><p class="hint">Choose five Kai Disciplines after starting. ${giftText} included.</p>`}<label>Royal gold (10 + roll)<input name="gold" type="number" min="10" max="19" value="${10+randomNumber()}" required></label><p class="hint">${source?'Added to your existing gold, including totals above 50.':'Your starting Gold Crowns.'} ${giftText} added to Special Items.</p>${source?.weapons.length?`<div><label>Keep carried weapons</label>${source.weapons.map((name,i)=>`<label class="checkbox-row"><input name="keep" type="checkbox" value="${i}" checked>${escapeHTML(name)}</label>`).join('')}<p class="hint">Uncheck a weapon to exchange it for a starting weapon. The source checkpoint retains your original equipment.</p></div>`:''}${supplyFields}<p class="hint">Choose different listed supplies; Meals and potion doses each use a backpack slot. Carried equipment counts toward the usual limits. Choose up to ${setup.supplyLimit} supplies. Use Store on the Special tab to leave carried items in safekeeping.</p>${checkpointChoice()}<p class="section-error" id="form-error" role="alert"></p><div class="dialog-actions"><button class="secondary" type="button" data-action="books">Back</button><button class="primary">Begin Book ${book}</button></div></form>`);
 }
 function magnakaiSetupDialog(book,source) {
   const setup=C.books[book],noSupplies=Boolean(source && setup.noContinuedSupplies);
   const options=selected=>`<option value="">No item</option>${setup.supplies.map(item=>`<option ${item===selected?'selected':''}>${item}</option>`).join('')}`;
   dialog(source?`Continue into Book ${book}`:`Start Book ${book}`,`<form id="book2-form" data-book="${book}" data-source="${source?.book || ''}" data-continuing="${Boolean(source)}" class="form-stack">
     <p class="caption">${setup.title}${campaign.books[book]?` · Replaces only your Book ${book} chart; Undo is available.`:''}</p>
-    ${source?`<div class="carry-summary">From Book ${source.book}: CS ${source.baseCS} · EP ${source.ep}/${R.maxEndurance(source)} · ${source.gold} Crowns<br>Scores, wounds, equipment, safekeeping, Kai record, and notes are copied. The source chart stays saved; the new encounter resets.</div><label class="checkbox-row"><input name="completed" type="checkbox" required>I successfully completed Book ${source.book}</label><label class="checkbox-row"><input name="fullKai" type="checkbox">I completed all five Kai books; record all ten basic skills</label><p class="hint">Otherwise the selected Kai skills are copied for your review. No skipped books or additional skills are inferred. Edit the inherited record in Mastery.</p>`:`<div class="grid-two"><label>Combat skill (10 + roll)<input name="cs" type="number" min="10" max="19" value="${10+randomNumber()}" required></label><label>Endurance (20 + roll)<input name="ep" type="number" min="20" max="29" value="${20+randomNumber()}" required></label></div><p class="hint">Fresh entry has no inherited Kai bonuses. The story assumes basic Kai training; review any mechanical benefits yourself in Mastery.</p>`}
+    ${source?`<div class="carry-summary">From Book ${source.book}: CS ${source.baseCS} · EP ${source.ep}/${R.maxEndurance(source)} · ${source.gold} Crowns<br>Scores, wounds, equipment, safekeeping, Kai record, and notes are copied. The new encounter resets. Keep a checkpoint below to retain the source chart.</div><label class="checkbox-row"><input name="completed" type="checkbox" required>I successfully completed Book ${source.book}</label><label class="checkbox-row"><input name="fullKai" type="checkbox">I completed all five Kai books; record all ten basic skills</label><p class="hint">Otherwise the selected Kai skills are copied for your review. No skipped books or additional skills are inferred. Edit the inherited record in Mastery.</p>`:`<div class="grid-two"><label>Combat skill (10 + roll)<input name="cs" type="number" min="10" max="19" value="${10+randomNumber()}" required></label><label>Endurance (20 + roll)<input name="ep" type="number" min="20" max="29" value="${20+randomNumber()}" required></label></div><p class="hint">Fresh entry has no inherited Kai bonuses. The story assumes basic Kai training; review any mechanical benefits yourself in Mastery.</p>`}
     <p class="hint">${source&&R.isMagnakai(source)?'Your Magnakai skills, masteries, checked circles, and arrows are retained. After completing a Magnakai adventure, choose one new Discipline on Kai. If you already had Weaponmastery, choose one additional mastered type in Mastery; newly learned Weaponmastery starts with three.':'Begin as Kai Master Superior: choose three Magnakai Disciplines on Kai. Weaponmastery starts with three chosen weapon types.'} Counts are guidance; you control the record.${book>=8?' Improved abilities are described in Discipline dialogs. Choose your Weaponmastery level explicitly in Mastery.':book===7?' Four skills correspond to Primate; its improved abilities remain manual.':''}</p>
     ${noSupplies?'<p class="hint">Continued Book 11 entry adds no gold, map, Meals, or supply choices. Your carried equipment is retained.</p>':`<label>Starting gold (10 + roll)<input name="gold" type="number" min="10" max="19" value="${10+randomNumber()}" required></label><p class="hint">${source?'Added to your existing Crowns. ':''}${setup.map?`${setup.map} included.`:'Fresh Book 11 includes two Meals; no map is granted.'} Totals above 50 remain editable.</p>`}
     ${!noSupplies && source?.weapons.length?`<div><label>Keep carried weapons</label>${source.weapons.map((name,i)=>`<label class="checkbox-row"><input name="keep" type="checkbox" value="${i}" checked>${escapeHTML(name)}</label>`).join('')}<p class="hint">Uncheck to exchange a weapon on the new chart.</p></div>`:''}
     <div class="grid-two">${Array.from({length:noSupplies?0:setup.supplyLimit},(_,i)=>`<label>Starting supply item ${i+1}<select name="item${i+1}">${options(!source?(i===0?'Sword':i===1?(book===12?'4 Meals':book===11?'':book>=7?'3 Meals':'4 Special Rations'):''):'')}</select></label>`).join('')}</div>
     <p class="hint">Choose up to ${noSupplies?0:setup.supplyLimit} different supplies, within two weapons and eight backpack slots. ${book===12?'Four Meals use four slots. Rope and the self-lighting Lantern use backpack slots.':book>=10?'Three Meals use three slots. Rope, the self-lighting Lantern, and potions use backpack slots. Alether, when offered, gives +2 CS for one combat: use the Section CS modifier and remove the dose yourself.':book>=7?'Three Meals use three slots. Rope and the self-lighting Lantern go in the backpack. Three Fireseeds are separate Special Items; remove each manually when used.':'Four rations use four slots. Rope and Tinderbox go in the backpack. Armour adds 2 EP without healing old wounds.'} A quiver adds six arrows to Stats.</p>
-    <p class="section-error" id="form-error" role="alert"></p><div class="dialog-actions"><button class="secondary" type="button" data-action="books">Back</button><button class="primary">Begin Book ${book}</button></div></form>`);
+    ${checkpointChoice()}<p class="section-error" id="form-error" role="alert"></p><div class="dialog-actions"><button class="secondary" type="button" data-action="books">Back</button><button class="primary">Begin Book ${book}</button></div></form>`);
 }
 function grandMasterSetupDialog(book,source) {
   const setup=C.books[book],goldBase=setup.goldBase || 10;
@@ -296,7 +313,7 @@ function grandMasterSetupDialog(book,source) {
     <div class="grid-two">${Array.from({length:setup.supplyLimit},(_,i)=>`<label>Starting supply item ${i+1}<select name="item${i+1}"><option value="">No item</option>${setup.supplies.map(item=>`<option ${!source && item===(i===0?'Sword':i===1?(setup.supplies.find(item=>/^\d+ Meals$/.test(item)) || ''):'')?'selected':''}>${item}</option>`).join('')}</select></label>`).join('')}</div>
     <p class="hint">Up to ${setup.supplyLimit} different choices; two weapons and ten backpack slots. Each Meal and dose uses a slot. A starting Quiver adds six arrows once. Later arrow changes are manual.</p>
     <p class="hint">Special Item carryover guidance: ${C.grandCarryover.join(', ')}. Review your edition and record. Possessions are copied without automatic removal; use Carry/Safekeeping to manage them. The twelve-Special-Item limit is guidance.</p>
-    <p class="section-error" id="form-error" role="alert"></p><div class="dialog-actions"><button class="secondary" type="button" data-action="books">Back</button><button class="primary">Begin Book ${book}</button></div></form>`);
+    ${checkpointChoice()}<p class="section-error" id="form-error" role="alert"></p><div class="dialog-actions"><button class="secondary" type="button" data-action="books">Back</button><button class="primary">Begin Book ${book}</button></div></form>`);
 }
 function grandMasteryDialog() {
   const checks=(field,names,selected)=>`<div class="grid-two">${names.map(name=>`<label class="checkbox-row"><input name="${field}" type="checkbox" value="${name}" ${selected.includes(name)?'checked':''}>${name}</label>`).join('')}</div>`;
@@ -347,7 +364,7 @@ function statsDialog() {
 }
 function newDialog() {
   if (state.book>1) return bookSetupDialog(state.book,false);
-  dialog('A new adventure',`<form id="new-form" class="form-stack"><p class="caption">Start Book 1 with fresh scores and equipment. This replaces your Book 1 chart; your other book charts are kept. You can undo it.</p><div class="grid-two"><label>Combat skill (10 + roll)<input name="cs" type="number" min="10" max="19" value="${10+randomNumber()}" required></label><label>Endurance (20 + roll)<input name="ep" type="number" min="20" max="29" value="${20+randomNumber()}" required></label></div><label>Starting Gold Crowns (0–9)<input name="gold" type="number" min="0" max="9" value="${randomNumber()}" required></label><label>Item found at the monastery<select name="loot">${['Broadsword','Sword','Helmet (+2 EP)','Two Meals','Chainmail Waistcoat (+4 EP)','Mace','Healing Potion (+4 recovery)','Quarterstaff','Spear','12 Gold Crowns'].map((name,i)=>`<option value="${i}">${i} · ${name}</option>`).join('')}</select></label><label>Weaponskill mastery<select name="mastery">${weaponOptions(R.weapons[randomNumber()])}</select></label><p class="hint">An Axe, one Meal, and a Map are included. Choose five Kai Disciplines after starting.</p><div class="dialog-actions"><button class="secondary" type="button" data-action="reroll-new">Roll again</button><button class="primary">Begin adventure</button></div></form>`);
+  dialog('A new adventure',`<form id="new-form" class="form-stack"><p class="caption">Start Book 1 with fresh scores and equipment. This replaces your Book 1 chart; your checkpoints are kept. You can undo it.</p><div class="grid-two"><label>Combat skill (10 + roll)<input name="cs" type="number" min="10" max="19" value="${10+randomNumber()}" required></label><label>Endurance (20 + roll)<input name="ep" type="number" min="20" max="29" value="${20+randomNumber()}" required></label></div><label>Starting Gold Crowns (0–9)<input name="gold" type="number" min="0" max="9" value="${randomNumber()}" required></label><label>Item found at the monastery<select name="loot">${['Broadsword','Sword','Helmet (+2 EP)','Two Meals','Chainmail Waistcoat (+4 EP)','Mace','Healing Potion (+4 recovery)','Quarterstaff','Spear','12 Gold Crowns'].map((name,i)=>`<option value="${i}">${i} · ${name}</option>`).join('')}</select></label><label>Weaponskill mastery<select name="mastery">${weaponOptions(R.weapons[randomNumber()])}</select></label><p class="hint">An Axe, one Meal, and a Map are included. Choose five Kai Disciplines after starting.</p>${checkpointChoice()}<p class="section-error" id="form-error" role="alert"></p><div class="dialog-actions"><button class="secondary" type="button" data-action="reroll-new">Roll again</button><button class="primary">Begin adventure</button></div></form>`);
   $('#new-form select[name=loot]').value = String(randomNumber());
 }
 function itemDialog(type = gearView) {
@@ -381,12 +398,82 @@ function rollRound(evade = false, chosen = null) {
   roundPage = 0;
   render();
 }
-function exportSave() {
-  persist();
-  const blob = new Blob([JSON.stringify(campaign,null,2)],{type:'application/json'});
+function downloadSave(value,filename) {
+  const blob = new Blob([JSON.stringify(value,null,2)],{type:'application/json'});
+  if(blob.size>S.MAX_FILE_BYTES)return toast('This archive is too large for one file. Export individual checkpoints instead.');
   const url = URL.createObjectURL(blob), a = document.createElement('a');
-  a.href = url; a.download = 'lone-wolf-campaign-save.json'; a.click(); setTimeout(()=>URL.revokeObjectURL(url),1000);
+  a.href = url; a.download = filename; a.click(); setTimeout(()=>URL.revokeObjectURL(url),1000);
   toast('Save exported. Keep it as a backup.');
+}
+function exportSave() { downloadSave(C.validateCharacter(state),`lone-wolf-book-${state.book}-save.json`); }
+function checkpointChoice() {
+  return `<label class="checkbox-row"><input name="checkpoint" type="checkbox" checked>Keep a checkpoint of my current Book ${state.book} chart</label>`;
+}
+function checkpointDialog() {
+  dialog('Keep a checkpoint',`<form id="checkpoint-form" class="form-stack"><label>Checkpoint name<input name="label" maxlength="80" value="Book ${state.book} · Section ${state.section}" required></label><p class="hint">A checkpoint is a snapshot on this device. Later changes do not update it.</p><p class="section-error" id="form-error" role="alert"></p><button class="primary">Save checkpoint</button></form>`);
+}
+function checkpointsDialog() {
+  dialog('Checkpoints & archive',`<div class="form-stack"><p class="hint">Only the current book autosaves. Keep named snapshots here, or export an archive to move them to another device. Removing a checkpoint can be undone.</p><button class="primary" data-action="save-checkpoint">Keep current book checkpoint</button><button class="secondary" data-action="export-archive">Export current book & checkpoints</button>${checkpoints.length?[...checkpoints].reverse().map(entry=>`<section class="checkpoint"><strong>${escapeHTML(entry.label)}</strong><p class="hint">Book ${entry.chart.book} · Section ${entry.chart.section} · ${entry.chart.ep}/${R.maxEndurance(entry.chart)} EP${entry.createdAt?` · ${escapeHTML(new Date(entry.createdAt).toLocaleString())}`:' · Imported chart'}</p><div class="checkpoint-actions"><button class="secondary" data-action="restore-checkpoint" data-id="${entry.id}">Restore…</button><button class="secondary" data-action="link-checkpoint" data-id="${entry.id}">Save link</button><button class="secondary" data-action="export-checkpoint" data-id="${entry.id}">Export</button><button class="danger-button" data-action="delete-checkpoint" data-id="${entry.id}">Remove</button></div></section>`).join(''):'<p class="hint">No checkpoints yet. You can also keep one when starting another book.</p>'}</div>`);
+}
+function clearSaveParameter() {
+  if(!window.location || !window.history)return;
+  const url=new URL(window.location.href);url.searchParams.delete('state');
+  window.history.replaceState(window.history.state,'',url.href);
+}
+function restoreDialog(chart,importedCheckpoints=null) {
+  const next=C.validateCharacter(chart);
+  dialog('Restore this adventure?',`<div class="form-stack"><p class="hint">Book ${next.book} · ${C.books[next.book].title} · Section ${next.section} · ${next.ep}/${R.maxEndurance(next)} endurance.</p><p class="hint">This replaces the current book with a snapshot. Later progress is not merged. Undo is available.${importedCheckpoints?` This file also adds ${importedCheckpoints.length} checkpoints to your archive.`:''}</p><label class="checkbox-row"><input id="restore-checkpoint" type="checkbox" checked>Keep a checkpoint of my current Book ${state.book} chart</label><p class="section-error" id="form-error" role="alert"></p><div class="dialog-actions"><button class="secondary" data-action="close-dialog">Cancel</button><button class="primary" id="confirm-import">Restore book</button></div></div>`);
+  $('#confirm-import').addEventListener('click',()=>{
+    const pending=urlPending;
+    try {
+      urlPending=false;
+      change(()=>{
+        if($('#restore-checkpoint').checked)keepCheckpoint();
+        for(const entry of importedCheckpoints || []) {
+          const previous=checkpoints.find(c=>c.id===entry.id);
+          if(previous && JSON.stringify(previous)===JSON.stringify(entry))continue;
+          checkpoints=S.append(checkpoints,previous?S.checkpoint(entry.chart,entry.label):clone(entry));
+        }
+        storageProtected=false;state=clone(next);campaign.activeBook=next.book;
+      },'Book restored. Undo is available.');
+      if(pending)clearSaveParameter();
+      gearPage=roundPage=0;closeDialog();switchView('chart');
+      if(!storageAvailable)toast('Restored in memory. Browser storage is unavailable; copy a new save link or export before closing.');
+    } catch(error) {urlPending=pending;$('#form-error').textContent=error.message;}
+  });
+}
+async function openSaveLink() {
+  urlPending=true;const request=++linkRequest;
+  dialog('Opening save link', '<p class="hint">Checking the book chart. Your saved progress has not been changed.</p>');persist();
+  try {
+    const url=new URL(window.location.href),tokens=url.searchParams.getAll('state');
+    if(url.href.length>S.MAX_URL_LENGTH || tokens.length!==1)throw new Error('Save link is too large or contains duplicate state parameters.');
+    const chart=await S.decode(tokens[0]);
+    if(request===linkRequest && urlPending)restoreDialog(chart);
+  } catch(error) {
+    if(request!==linkRequest || !urlPending)return;
+    urlPending=false;linkRequest++;clearSaveParameter();$('#dialog').close();savedStatus();
+    toast(`Could not open save link. ${error.message || 'Use a save file instead.'}`);
+  }
+}
+async function showSaveLink(chart=state) {
+  const snapshot=clone(chart),request=++linkRequest;
+  dialog('Save link','<p class="hint">Preparing a snapshot of this book…</p>');
+  try {
+    const link=await S.createLink(snapshot,window.location.href);
+    if(request!==linkRequest || !$('#dialog').open)return;
+    dialog('Save link',`<div class="form-stack"><p class="hint">Book ${snapshot.book} · Section ${snapshot.section}. This includes the entire chart and Journal. Anyone with the link can read it.</p><label>Save link<textarea id="save-link" rows="4" readonly></textarea></label><button class="primary" data-action="copy-save-link">Copy link</button><p class="hint">Copy this link to another device, a bookmark, or your notes. It is a snapshot: copy a new link after playing. Links can appear in browser history and hosting logs.</p></div>`);
+    $('#save-link').value=link;
+  } catch(error) {
+    if(request!==linkRequest || !$('#dialog').open)return;
+    dialog('Save link unavailable',`<div class="form-stack"><p class="hint">${escapeHTML(error.message || 'Could not create a save link. Export a save file instead.')}</p><button class="primary" id="export-link-file">Export this book</button></div>`);
+    $('#export-link-file').addEventListener('click',()=>downloadSave(snapshot,`lone-wolf-book-${snapshot.book}-save.json`));
+  }
+}
+async function copySaveLink() {
+  const field=$('#save-link');field.focus();field.select();
+  try {await navigator.clipboard.writeText(field.value);toast('Save link copied.');}
+  catch {toast('Select and copy the link above.');}
 }
 function rulesDialog() {
   if(R.isGrandMaster(state))return grandRulesDialog();
@@ -486,11 +573,20 @@ document.addEventListener('click',event=>{
   else if (action==='finish-combat') change(s=>s.combat=null);
   else if (action==='undo') {closeDialog();undo();}
   else if (action==='export') exportSave();
+  else if (action==='save-link') showSaveLink();
+  else if (action==='copy-save-link') copySaveLink();
+  else if (action==='checkpoints') checkpointsDialog();
+  else if (action==='save-checkpoint') checkpointDialog();
+  else if (action==='restore-checkpoint') {const entry=checkpoints.find(c=>c.id===button.dataset.id);if(entry)restoreDialog(entry.chart);}
+  else if (action==='export-checkpoint') {const entry=checkpoints.find(c=>c.id===button.dataset.id);if(entry)downloadSave(entry.chart,`lone-wolf-book-${entry.chart.book}-save.json`);}
+  else if (action==='link-checkpoint') {const entry=checkpoints.find(c=>c.id===button.dataset.id);if(entry)showSaveLink(entry.chart);}
+  else if (action==='delete-checkpoint') {change(()=>{checkpoints=checkpoints.filter(c=>c.id!==button.dataset.id);},'Checkpoint removed. Undo is available.');checkpointsDialog();}
+  else if (action==='export-archive') downloadSave(S.record(state,checkpoints),'lone-wolf-checkpoint-archive-save.json');
   else if (action==='import') {closeDialog();$('#import-file').click();}
   else if (action==='new' || action==='reroll-new') newDialog();
   else if (action==='rules') rulesDialog();
 });
-$('#menu-button').addEventListener('click',()=>dialog('Adventure menu',`<div class="menu-options"><button class="secondary" data-action="undo" ${!undoStack.length?'disabled':''}>↶ Undo last change</button><button class="secondary" data-action="books">Switch books / continue journey</button><button class="secondary" data-action="stats">Edit scores</button>${R.isAdvanced(state)?'<button class="secondary" data-action="adjusted-roll">Adjusted missile roll</button><button class="secondary" data-action="psychic-dialog">Choose psychic attack</button>':''}<button class="secondary" data-action="export">Export save file</button><button class="secondary" data-action="import">Import save file</button><button class="secondary" data-action="rules">Book ${state.book} rules & credits</button><button class="danger-button" data-action="new">Start a new adventure…</button></div><p class="hint" style="margin-top:17px">${storageAvailable?'Changes save automatically in this browser.':'Browser storage is unavailable. Export your save before closing.'} Export to move your chart to another device.</p>`));
+$('#menu-button').addEventListener('click',()=>dialog('Adventure menu',`<div class="menu-options"><button class="secondary" data-action="undo" ${!undoStack.length?'disabled':''}>↶ Undo last change</button><button class="secondary" data-action="books">Switch books / continue journey</button><button class="secondary" data-action="stats">Edit scores</button>${R.isAdvanced(state)?'<button class="secondary" data-action="adjusted-roll">Adjusted missile roll</button><button class="secondary" data-action="psychic-dialog">Choose psychic attack</button>':''}<button class="secondary" data-action="save-link">Copy save link</button><button class="secondary" data-action="export">Export current book</button><button class="secondary" data-action="checkpoints">Checkpoints &amp; archive</button><button class="secondary" data-action="import">Import save file</button><button class="secondary" data-action="rules">Book ${state.book} rules & credits</button><button class="danger-button" data-action="new">Start a new adventure…</button></div><p class="hint" style="margin-top:17px">${storageProtected?'Saved data needs recovery. Import a backup or explicitly start a new adventure.':storageAvailable?'Changes save automatically in this browser.':'Browser storage is unavailable. Export your save before closing.'} Save links and normal exports contain only the current book. Use an archive export to keep checkpoints together.</p>`));
 document.addEventListener('change',event=>{
   if(event.target.dataset?.lore) {
     try {const next=C.setLoreCircle(state,event.target.dataset.lore,event.target.checked);change(()=>state=next,'Lore-circle bonuses updated.');}
@@ -510,8 +606,13 @@ document.addEventListener('input',event=>{
 });
 document.addEventListener('submit',event=>{
   const form=event.target;event.preventDefault();const data=new FormData(form);const number=name=>Number(data.get(name));
-  if(form.id==='new-form') {
-    change(()=>{state=newCharacter(number('cs'),number('ep'),number('gold'),number('loot'),data.get('mastery'));},'Your journey begins. Choose five Kai Disciplines.');closeDialog();switchView('kai');
+  if(form.id==='checkpoint-form') {
+    try {change(()=>keepCheckpoint(state,String(data.get('label'))),'Checkpoint saved.');checkpointsDialog();}
+    catch(error){$('#form-error').textContent=error.message;}
+  }
+  else if(form.id==='new-form') {
+    try {change(()=>{if(data.has('checkpoint'))keepCheckpoint();storageProtected=false;state=newCharacter(number('cs'),number('ep'),number('gold'),number('loot'),data.get('mastery'));},'Your journey begins. Choose five Kai Disciplines.');closeDialog();switchView('kai');}
+    catch(error){$('#form-error').textContent=error.message;}
   }
   else if(form.id==='book2-form') {
     try {
@@ -519,7 +620,7 @@ document.addEventListener('submit',event=>{
       const book=Number(form.dataset.book || 2),source=continuing?campaign.books[Number(form.dataset.source || 1)]:null;
       if (continuing && (!source || !data.has('completed'))) throw new Error('Confirm that you successfully completed the source book.');
       const next=C.startBook(book,source,{cs:number('cs'),ep:number('ep'),gold:number('gold'),mastery:data.get('mastery') || 'Axe',discipline:data.get('discipline'),completed:data.has('completed'),fullKai:data.has('fullKai'),fullMagnakai:data.has('fullMagnakai'),keepWeapons:source && C.books[book].noContinuedSupplies?undefined:data.getAll('keep').map(Number),items:Array.from({length:C.books[book].supplyLimit},(_,i)=>data.get(`item${i+1}`)).filter(Boolean)});
-      change(()=>{campaign.activeBook=book;state=next;},continuing?`Book ${book} begins. Your Book ${source.book} chart is saved.`:`Book ${book} begins. Choose ${R.isGrandMaster(next)?`${C.limit(next)} Grand Master`:R.isMagnakai(next)?`${C.limit(next)} Magnakai`:'five Kai'} Disciplines.`);
+      change(()=>{if(data.has('checkpoint'))keepCheckpoint();storageProtected=false;campaign.activeBook=book;state=next;},continuing?`Book ${book} begins.${data.has('checkpoint')?' A checkpoint keeps your previous chart.':''}`:`Book ${book} begins. Choose ${R.isGrandMaster(next)?`${C.limit(next)} Grand Master`:R.isMagnakai(next)?`${C.limit(next)} Magnakai`:'five Kai'} Disciplines.`);
       gearPage=roundPage=0;closeDialog();switchView(continuing?'chart':'kai');
     } catch(error) {$('#form-error').textContent=error.message;}
   }
@@ -590,11 +691,9 @@ document.addEventListener('submit',event=>{
 $('#import-file').addEventListener('change',async event=>{
   const file=event.target.files[0];if(!file)return;
   try {
-    if(file.size>2000000)throw new Error('Save file is too large.');
-    const imported=C.validateSave(JSON.parse(await file.text()));
-    const chart=imported.books[imported.activeBook];
-    dialog('Import this adventure?',`<p class="hint">Books ${Object.keys(imported.books).join(" & ")} · active Book ${chart.book}, section ${chart.section} · ${chart.ep}/${R.maxEndurance(chart)} endurance. This replaces your saved campaign. You can undo it.</p><div class="dialog-actions"><button class="secondary" data-action="close-dialog">Cancel</button><button class="primary" id="confirm-import">Import save</button></div>`);
-    $('#confirm-import').addEventListener('click',()=>{change(()=>{campaign=imported;state=campaign.books[campaign.activeBook];},'Campaign imported.');closeDialog();});
+    if(file.size>S.MAX_FILE_BYTES)throw new Error('Save file is too large.');
+    const raw=JSON.parse(await file.text()), imported=S.importRecord(raw);
+    restoreDialog(imported.current,raw.format===S.FORMAT || raw.books ? imported.checkpoints : null);
   } catch(error) {toast(error.message || 'Could not read this save file.');}
   event.target.value='';
 });
@@ -607,4 +706,6 @@ window.addEventListener('resize',()=>{
   if (size !== lastPageSize && !$('#dialog').open && ['special','combat'].includes(view)) render();
   lastPageSize = size;
 });
-render();persist();if(recoveryNotice)toast(recoveryNotice);
+render();
+if(window.location && new URL(window.location.href).searchParams.has('state')) openSaveLink();
+else {persist();if(recoveryNotice)toast(recoveryNotice);}

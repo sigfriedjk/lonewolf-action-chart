@@ -10,9 +10,9 @@ Open `index.html` directly, or use an existing Node runtime (Node 24 was used fo
 node preview.js
 ```
 
-Open [http://127.0.0.1:4173/](http://127.0.0.1:4173/); Ctrl+C stops the preview. No `npm install` is needed. The preview is localhost-only and serves the five app assets plus optional ignored source books. It is development tooling, not a production server.
+Open [http://127.0.0.1:4173/](http://127.0.0.1:4173/); Ctrl+C stops the preview. No `npm install` is needed. The preview is localhost-only and serves the six app assets plus optional ignored source books. It is development tooling, not a production server.
 
-Saves belong to their browser and origin. Local files, localhost, and the live site have separate storage. Use Export/Import to move a campaign; export before testing an older app version.
+Saves belong to their browser and origin. Local files, localhost, and the live site have separate storage. Use a save link or Export/Import to move charts and archives; export before testing an older app version.
 
 ## File responsibilities
 
@@ -22,26 +22,43 @@ Saves belong to their browser and origin. Local files, localhost, and the live s
 | `styles.css` | Phone/desktop layout, ten-row Grand Master backpack, dialogs, gestures, reduced motion. |
 | `rules.js` | Pure training/weapon data, combat table, arithmetic, recovery, psychic and missile helpers. Exposes `LWRules` and CommonJS. |
 | `campaign.js` | Pure book metadata/setup, carryover, supplies, validation/migration, safekeeping and bonus changes. Exposes `LWCampaign` and CommonJS. |
+| `saves.js` | Current-book/checkpoint records, legacy campaign migration, bounded gzip/base64url link codec. Exposes `LWSaves` and CommonJS. |
 | `app.js` | Rendering, events/dialogs, browser storage, navigation, gestures, import/export, Undo. |
 | `preview.js` | Optional static preview on port 4173. |
 | `tests/` | Direct Node suites, VM browser harnesses, tracked canonical combat-table fixture. |
 | `scripts/download-books.sh` | Optional Project Aon reference download; output is Git-ignored. |
 
-Browser script order is rules → campaign → app. Once loaded, the app makes no network calls; external book links open Project Aon. Only the five app assets are required to run.
+Browser script order is rules → campaign → saves → app. Once loaded, the app makes no network calls; external book links open Project Aon. Only the six app assets are required to run.
 
 ## State and save compatibility
 
-Each campaign is `{version, activeBook, books}`. Every book owns an independent chart with scores, current EP, gold, weapons/equipped index, backpack/Meals, carried `special`, `storedSpecial`, training, section, notes, last roll, and combat. `completedBooks` records the player-confirmed source chain, not every earlier book number.
+The primary save unit is one validated book chart: scores, current EP, gold, weapons/equipped index, backpack/Meals, carried `special`, `storedSpecial`, training, section, notes, last roll, and combat. `completedBooks` records the player-confirmed source chain, so continuation needs only the current chart. Earlier charts are optional immutable checkpoints; they are never required to infer skills, completion, or bonuses.
 
-| Charts | Character version | Campaign/storage |
+New browser storage uses `lone-wolf-action-chart-current-v1` with `{format:'lone-wolf-book-save', version:1, current, checkpoints}`. Each checkpoint is `{id, label, createdAt, chart}`; imported legacy checkpoints have a null timestamp. Keeping current and checkpoints in one localStorage value makes restoration and archive changes atomic on disk. The archive is capped at 200 checkpoints and a byte budget that reserves space for the current chart in an 8 MB file. Overflow fails visibly without pruning old records; browser quotas can be smaller, and storage errors leave the last disk save intact. Normal file exports contain just the current chart. Archive exports contain the full new record; file imports are bounded at 8,000,000 bytes. Archives merge into existing checkpoints, reusing identical IDs/records and assigning new IDs to conflicting records.
+
+`campaign` remains a derived browser-session view `{version, activeBook, books}` for the book picker and existing rule/setup code. It uses the latest checkpoint per book, overlaid by the current chart. Only `current` is updated by ordinary autosave; edits never rewrite archived snapshots. Starting a book offers a checked, optional “Keep a checkpoint” control. Restoring a checkpoint previews its book/section/EP and offers to keep the outgoing current chart. Reopening a chart grants no supplies. Explicit continuation always uses the current chart, so restore an earlier checkpoint first to branch from it.
+
+Legacy formats remain readable:
+
+| Charts | Character version | Legacy campaign/storage |
 | --- | --- | --- |
-| Books 1–5 | 1 | Campaign 2, `lone-wolf-action-chart-v2`; legacy `lone-wolf-action-chart-v1` imports/storage remain supported. |
+| Books 1–5 | 1 | Campaign 2, `lone-wolf-action-chart-v2`; single-chart `lone-wolf-action-chart-v1`. |
 | Books 6–12 | 2 | Campaign 3, `lone-wolf-action-chart-v3`. |
 | Books 13–20 | 3 | Campaign 4, `lone-wolf-action-chart-v4`. |
 
-A campaign can contain mixed character versions. Keep earlier numeric values and chart versions on migration; never reroll or silently reinterpret old scores. Loading prefers v4, then v3, then v2/v1. If the newest stored data is corrupt, show recovery rather than silently selecting older progress. Keep all previous keys. Once upgraded, Undo and imports of older campaigns continue writing the newest active storage version so stale newer data cannot reappear on reload.
+Loading prefers the new record, then v4/v3/v2/v1. With no new record, the selected legacy campaign migrates every book chart into an independent checkpoint and selects its active chart. All old keys remain untouched. Once migrated, Undo and older imports write only the new key. If the preferred record is corrupt, never fall back to stale keys or overwrite it at startup/on backgrounding. Show recovery and preserve its bytes until the player explicitly restores a valid backup or starts a new adventure.
 
-`validateSave` accepts legacy single charts and supported campaigns, returns cleaned independent objects, and rejects malformed/unsupported records. Every new field must survive validation, loading, copying, export/import, and Undo. Invalid imports must leave the current campaign unchanged. Older app versions may reject newer books or discard newer optional fields.
+`validateSave` still accepts legacy single charts and supported campaigns. `saves.importRecord` also accepts the new archive format. Every new field must survive validation, links, loading, copying, export/import, and Undo. Invalid imports leave current progress unchanged. Older app versions may reject newer books or discard newer optional fields.
+
+### Save links
+
+`?state=1.gz.<base64url>` contains only a validated book chart, serialized as UTF-8 JSON and compressed with native gzip streams. `1.json.<base64url>` is the fallback when native compression/decompression is unavailable. Link transport version 1 is separate from character/campaign versions. Uncompressed-capable browsers explain when they cannot open a compressed link and retain file import/export.
+
+The complete generated/incoming URL is limited to 8,192 characters; this is an application sharing budget, not a guarantee for every browser, host, or messaging service. Decoding validates the base64url alphabet/canonical form, gzip, UTF-8, JSON, and chart schema. A streaming 1,000,000-byte decoded limit prevents decompression bombs. Oversized charts retain all data and offer a book file instead; no fields are trimmed. The preview server accepts query strings without changing asset routing.
+
+Link generation captures a snapshot before asynchronous compression. Dismissed/superseded link requests cannot replace a newer dialog. Clipboard failures leave a selectable text field. Links are explicit snapshots, not live URL autosave; browser history is not the checkpoint archive. No `pushState` entries are generated. Other query parameters, fragments, and history state are preserved when adding/removing the `state` parameter.
+
+Incoming links block startup/background writes until validation and a restore/cancel decision. Validation failures leave stored bytes untouched. Restore uses the same preview/confirmation path as files and archived charts; it replaces the current chart without merging progress. Acceptance/cancellation removes `state` with `replaceState` so reload cannot replay an old snapshot. If local saving fails after acceptance, the chart remains playable in memory, the old disk save stays intact, and the player is told to copy a fresh link or export before closing. Encoding is not encryption: query saves may appear in browser history, hosting logs, or referrers. The share dialog explains that anyone with the link can read the full chart and Journal.
 
 Magnakai fields are `magnakai`, `masteries`, `loreCircles`, and `arrows`; `disciplines`/`mastery` retain inherited Kai training. `weaponmasteryLevel` defaults to `standard`; explicit choices are `standard`, `tutelary`, and `scion`. `psychicMode` defaults to `legacy`, preserving ordinary Mindblast without granting higher attacks. `lastAdjustedRoll` defaults to null and stores raw roll, signed modifier, selected bonus flags, and a validated total; `lastRoll` stays raw 0–9.
 
@@ -49,7 +66,7 @@ Grand Master charts add `grandMaster`, `grandMasteries`, `grandAdvances` (initia
 
 Combat rounds store total `heroLoss`/`enemyLoss`, with included portions: incoming `mindblastLoss`, and optional `surgeLoss`, `flameLoss`, `blastRolls`/`blastLoss`/`blastCost`, and `rayLoss`/`rayCost`. Do not add these breakdown fields to the totals a second time. Costs and damage are capped at remaining EP; validators reject inconsistent breakdowns.
 
-`change()` snapshots the entire campaign, mutates, persists, and rerenders. Undo is session-only, capped at 30 entries. When replacing `state`, let `persist()` update `campaign.books[activeBook]`. Notes save on input without creating individual Undo entries. Views, filters, pages, gestures, and Carry/Safekeeping selection are transient; the Special location resets to Carry on reload.
+`change()` snapshots the current session campaign, checkpoints, and recovery flag, mutates, persists, and rerenders. Failed mutations restore the snapshot without consuming Undo. Undo is session-only, capped at 30 entries. When replacing `state`, set the active book as appropriate; `change()` rebuilds the derived campaign from current/checkpoints. Notes save on input without creating individual Undo entries. Views, filters, pages, gestures, and Carry/Safekeeping selection are transient; the Special location resets to Carry on reload.
 
 ## Setup and rule invariants
 
@@ -71,11 +88,12 @@ Combat rounds store total `heroLoss`/`enemyLoss`, with included portions: incomi
 
 ## Automated checks
 
-Run from the repository root using existing Node. All fourteen suites work without book downloads:
+Run from the repository root using existing Node. All sixteen suites work without book downloads:
 
 ```sh
 node --check app.js
 node --check campaign.js
+node --check saves.js
 node --check rules.js
 for test_file in tests/*.test.js; do
   node "$test_file" || exit 1
@@ -84,13 +102,15 @@ bash -n scripts/download-books.sh
 git diff --check
 ```
 
-Suites cover rules, campaign setup/validation, browser save handling, Discipline gestures, Books 3–5, Book 6, Book 7, Books 8–9, Books 10–12, Book 13, Books 14–15, Book 16, Books 17–18, and Books 19–20. The canonical Book 1 combat-table fixture is tracked. Additional local Book 2–20 source comparisons run only when the ignored XHTML files exist; skipped comparisons are reported separately.
+Suites cover rules, campaign setup/validation, browser save handling, Discipline gestures, Books 3–5, Book 6, Book 7, Books 8–9, Books 10–12, Book 13, Books 14–15, Book 16, Books 17–18, and Books 19–20. The current-book and save-link suites additionally cover all twenty book round trips, Unicode/combat/safekeeping, malformed/oversized links, decompression bounds, archive migration/validation, recovery/storage errors, optional checkpoints, and Undo. The canonical Book 1 combat-table fixture is tracked. Additional local Book 2–20 source comparisons run only when the ignored XHTML files exist; skipped comparisons are reported separately.
 
 ## Browser and live verification
 
-Use isolated browser contexts and actual UI actions, including real file export/import. Do not mutate a player's production saves. Current verification sizes are 390×844, 430×932, and 1280×900. Check six-tab navigation, setup/full supplies/capacity failures, all ten Grand Master backpack rows together, Mastery/inherited records, Carry/Safekeeping, fixed-roll combat and logs, special helpers, switching, Undo, reload, and valid/invalid imports. Normal pages at those sizes should fit; dialogs and smaller viewports can scroll. Physical-phone testing is a separate activity.
+Use isolated browser contexts and actual UI actions, including real file export/import. Do not mutate a player's production saves. Current verification sizes are 390×844, 430×932, and 1280×900. Check save-link copy/restore/cancel/reload, oversized/invalid links, legacy migration, current-book and archive file transfers, named checkpoints/removal/Undo, and continuation with/without a checkpoint. Also check six-tab navigation, setup/full supplies/capacity failures, all ten Grand Master backpack rows together, Mastery/inherited records, Carry/Safekeeping, fixed-roll combat and logs, special helpers, switching, Undo, reload, and valid/invalid imports. Normal pages at those sizes should fit; dialogs and smaller viewports can scroll. Physical-phone testing is a separate activity.
 
 For a live check, fetch `index.html` and the exact asset URLs it references; compare their bytes with the intended deployment commit before exercising the UI. Confirm all twenty books are available. Exercise Grand Master continuation, v4 upgrade retaining old keys, chosen advances/masteries, Deliverance, Kai-ray and the next ordinary psychic round, Kai-blast/flame, adjusted Grand Bow rolls, and twenty-chart persistence. Confirm malformed imports preserve the current campaign. Report the tested commit and distinguish deployed checks from local tests.
+
+On 23 October 2026, local isolated Chromium flows passed at 390×844, 430×932, and 1280×900: twenty-chart migration retaining old keys, Journal autosave without checkpoint mutation, actual clipboard copying, checkpoint creation/removal/Undo, actual book/archive downloads and imports, URL cancellation/restoration/reload with preserved unrelated parameters, malformed/oversized links, and Book 1→2 continuation with its default checkpoint plus archived-book restoration. No browser errors or horizontal overflow occurred. All sixteen Node suites and four app syntax, shell syntax, and whitespace checks passed. Optional downloaded-source comparisons were skipped; physical-device and deployed checks were not performed for this change.
 
 On 16 October 2026, the five live assets matched integration commit `d7a6a46fe0d705167ea9edf1207503da7561d9b9` byte-for-byte (HTTP 200). Isolated Chromium flows passed at all three sizes above: Book 13 entry and continuation through Book 20 with unchanged source charts; six tabs; ten-row backpacks, including full inventories; chosen mastery/advances/unarmed training and Undo; Deliverance; fixed-roll Kai-ray/log/Undo, retained Kai-surge and its next-round cost; Kai-blast/flaming damage; adjusted Grand Bow total 13; all twenty charts switched, reloaded, and exported/imported through actual files; invalid import preserved the campaign. No browser errors occurred. All fourteen Node suites, JavaScript/shell syntax, and whitespace checks passed. Optional downloaded-source comparisons were skipped in this checkout. Physical-phone testing was not performed.
 
@@ -114,7 +134,7 @@ Useful official clarifications: [Magnakai Disciplines](https://www.projectaon.or
 
 [Repository](https://github.com/sigfriedjk/lonewolf-action-chart) · [Live app](https://sigfriedjk.github.io/lonewolf-action-chart/index.html) · [Release history](CHANGELOG.md)
 
-GitHub Pages publishes the root of `main`; `.nojekyll` is tracked. The direct `index.html` link avoids a previously reported directory-URL phone 404. Keep `index.html`, `styles.css`, `rules.js`, `campaign.js`, and `app.js` together. Bump asset query versions in `index.html` whenever browser assets change; documentation-only edits need no bump.
+GitHub Pages publishes the root of `main`; `.nojekyll` is tracked. The direct `index.html` link avoids a previously reported directory-URL phone 404. Keep `index.html`, `styles.css`, `rules.js`, `campaign.js`, `saves.js`, and `app.js` together. Bump asset query versions in `index.html` whenever browser assets change; documentation-only edits need no bump.
 
 For an authorized release, inspect the worktree and remote head, run the checks, commit intended source/tests/docs, publish to `main`, and verify the Pages workflow succeeds for that exact commit. Then verify the live asset bytes and UI. Create a tag/release only when requested, at the verified commit, and never move an existing tag. Preserve unrelated work and check the expected remote SHA before updating a branch. Keep downloaded books, credentials, backups, and test artifacts out of the publication. Historical release approvals do not authorize a new release.
 

@@ -3,6 +3,8 @@ const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const vm=require('node:vm');
 const C=require('../campaign.js');
+const S=require('../saves.js');
+const readSaved=require('./saved-record.js');
 const R=require('../rules.js');
 const old=C.newCharacter(18,27,32,2,'Sword');
 delete old.book;delete old.continued;
@@ -11,24 +13,26 @@ const legacy=JSON.stringify(old);
 const storage=new Map([['lone-wolf-action-chart-v1',legacy]]);
 const elements=new Map(), listeners=new Map(), rollAnimations=[];
 function element(selector) {
-  if (!elements.has(selector)) elements.set(selector,{dataset:{},classList:{add(name){if(selector==='.random .die') rollAnimations.push(name);},remove(){}},addEventListener(){},focus(){},close(){this.open=false;},showModal(){this.open=true;},scrollTop:0});
+  if (!elements.has(selector)) elements.set(selector,{dataset:{},classList:{add(name){if(selector==='.random .die') rollAnimations.push(name);},remove(){}},addEventListener(type,fn){listeners.set(selector+':'+type,fn);},focus(){},close(){this.open=false;},showModal(){this.open=true;},scrollTop:0});
   return elements.get(selector);
 }
-const context=vm.createContext({window:{LWRules:R,LWCampaign:C,addEventListener(){}},document:{querySelector:element,addEventListener(type,fn){listeners.set(type,fn);}},
+const context=vm.createContext({window:{LWRules:R,LWCampaign:C,LWSaves:S,addEventListener(){}},document:{querySelector:element,addEventListener(type,fn){listeners.set(type,fn);}},
   localStorage:{getItem:key=>storage.get(key)??null,setItem:(key,value)=>storage.set(key,value)},
   crypto:{getRandomValues(values){values[0]=7;return values;}},matchMedia:()=>({matches:false}),setTimeout:()=>0,clearTimeout(){},console});
 vm.runInContext(fs.readFileSync(require.resolve('../app.js'),'utf8'),context);
 assert.equal(storage.get('lone-wolf-action-chart-v1'),legacy,'Original Book 1 storage must be retained');
-let saved=C.validateSave(JSON.parse(storage.get('lone-wolf-action-chart-v2')));
+let saved=readSaved(storage);
 assert.equal(saved.books[1].ep,21);assert.equal(saved.books[1].section,350);
-vm.runInContext("const next=C.startBook2(state,{gold:11,discipline:'Tracking',items:['Shield']});change(()=>{campaign.activeBook=2;state=next;});",context);
-saved=C.validateSave(JSON.parse(storage.get('lone-wolf-action-chart-v2')));
+vm.runInContext("const next=C.startBook2(state,{gold:11,discipline:'Tracking',items:['Shield']});change(()=>{keepCheckpoint();campaign.activeBook=2;state=next;});",context);
+saved=readSaved(storage);
 assert.equal(saved.activeBook,2);assert.equal(saved.books[2].disciplines.length,6);assert.equal(saved.books[1].gold,32);assert.equal(saved.books[2].gold,43);
-vm.runInContext('change(s=>s.ep=10);selectBook(1);change(s=>s.gold=1);selectBook(2);',context);
-saved=C.validateSave(JSON.parse(storage.get('lone-wolf-action-chart-v2')));
+vm.runInContext('change(s=>s.ep=10);selectBook(1);',context);
+element('#restore-checkpoint').checked=true;listeners.get('#confirm-import:click')();
+vm.runInContext('change(s=>s.gold=1);selectBook(2);',context);listeners.get('#confirm-import:click')();
+saved=readSaved(storage);
 assert.equal(saved.books[2].ep,10);assert.equal(saved.books[1].ep,21);assert.equal(saved.books[1].gold,1);assert.equal(saved.books[2].gold,43);
 vm.runInContext('undo();undo();undo();undo();undo();',context);
-saved=C.validateSave(JSON.parse(storage.get('lone-wolf-action-chart-v2')));
+saved=readSaved(storage);
 assert.equal(saved.activeBook,1);assert.equal(saved.books[1].gold,32);assert.equal(saved.books[1].ep,21);assert.equal(saved.books[2],undefined,'Undo the initial transfer restores the whole campaign');
 assert.equal(storage.get('lone-wolf-action-chart-v1'),legacy);
 function click(action,value,extra={}) {
@@ -37,7 +41,7 @@ function click(action,value,extra={}) {
 }
 vm.runInContext('change(s=>s.gold=50);',context);
 click('gold-adjust','1');
-saved=C.validateSave(JSON.parse(storage.get('lone-wolf-action-chart-v2')));
+saved=readSaved(storage);
 assert.equal(saved.books[1].gold,51,'Quick + crosses the usual pouch limit');
 click('gold-adjust','-1');assert.equal(vm.runInContext('state.gold',context),50);
 vm.runInContext('undo();',context);assert.equal(vm.runInContext('state.gold',context),51);
@@ -84,9 +88,9 @@ for(const book of [2,3,4,5]) {
   vm.runInContext(`bookSetupDialog(${book},true);`,context);
   assert.match(element('#dialog').innerHTML,new RegExp(`Begin Book ${book}`));
   assert.equal((element('#dialog').innerHTML.match(/name="item\d"/g)||[]).length,C.books[book].supplyLimit,'Expose the complete supply allowance');
-  submit({id:'book2-form',dataset:{book:String(book),source:String(book-1),continuing:'true'},values:{completed:'on',gold:'12',discipline:skillNames[book+3],keep:['0'],item1:'',item2:''}});
+  submit({id:'book2-form',dataset:{book:String(book),source:String(book-1),continuing:'true'},values:{checkpoint:'on',completed:'on',gold:'12',discipline:skillNames[book+3],keep:['0'],item1:'',item2:''}});
   assert.equal(vm.runInContext('campaign.activeBook',context),book);
-  assert.equal(C.validateSave(JSON.parse(storage.get('lone-wolf-action-chart-v2'))).activeBook,book);
+  assert.equal(readSaved(storage).activeBook,book);
   if(book===3) {
     click('eat');assert.equal(vm.runInContext('state.meals',context),0,'Kalte consumes a carried Meal despite Hunting');
     click('eat');assert.equal(vm.runInContext('state.ep',context),16,'Kalte without a carried Meal loses 3 EP');
@@ -103,7 +107,7 @@ assert.equal(vm.runInContext('state.book',context),5);assert.equal(vm.runInConte
 click('view',undefined,{view:'kai'});assert.match(element('#main').innerHTML,/Disciplines \(9\/9\)/);
 click('view',undefined,{view:'combat'});assert.match(element('#main').innerHTML,/Undead enemy/);
 const book5Before=vm.runInContext('JSON.stringify(state)',context);
-click('switch-book',undefined,{book:'2'});assert.equal(vm.runInContext('state.book',context),2);
+click('switch-book',undefined,{book:'2'});listeners.get('#confirm-import:click')();assert.equal(vm.runInContext('state.book',context),2);
 click('undo');assert.equal(vm.runInContext('JSON.stringify(state)',context),book5Before,'Undo restores the selected later chart');
 vm.runInContext('booksDialog();',context);assert.match(element('#dialog').innerHTML,/Shadow on the Sand/);
 console.log('Passed: real Books 2–5 setup submissions, full supply forms, Kalte Meals, Laumspur recovery, Book 5 bookmarks, five-book reloads, discipline count, later-book undead controls, switching, and Undo.');
@@ -132,7 +136,7 @@ submit({id:'combat-form',dataset:{},values:{name:'Mindblast enemy',cs:'20',ep:'3
 assert.equal(vm.runInContext('state.combat.mindblastDamage',context),2);
 vm.runInContext('rollRound(false,6);',context);
 assert.equal(vm.runInContext('state.combat.rounds[0].mindblastLoss',context),2);
-const combatSave=C.validateSave(JSON.parse(storage.get('lone-wolf-action-chart-v2')));
+const combatSave=readSaved(storage);
 assert.equal(combatSave.books[5].combat.mindblastDamage,2);assert.equal(combatSave.books[5].combat.rounds[0].mindblastLoss,2);
 click('undo');assert.equal(vm.runInContext('state.ep',context),24);assert.equal(vm.runInContext('state.combat.rounds.length',context),0);
 const activeBefore=vm.runInContext('JSON.stringify(state)',context);

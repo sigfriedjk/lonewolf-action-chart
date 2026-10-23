@@ -2,6 +2,14 @@
 
 Tags are immutable snapshots; a later commit on `main` may contain further changes. Follow each release link for its exact Git commit.
 
+## Unreleased — current-book save links and optional checkpoints
+
+- Current-book autosave and single-book JSON exports; gzip/base64url save links include the full chart, Journal, safekeeping, and combat. Very large charts use file export without losing fields.
+- Named immutable checkpoints, optional checkpoints at book transitions, and archive export/import. All charts from existing campaigns migrate into checkpoints while old storage keys stay untouched.
+- Preview before restoring a link, file, or archived chart; optional outgoing checkpoint and Undo. Links are snapshots and their state parameter is removed after restore/cancel to make reload safe.
+- Bounded URL/decompression/file input, selectable-copy fallback, clear storage-failure handling, and corrupt-save protection without stale fallback or automatic overwrite.
+- Sixteen Node suites and local Chromium flows pass at 390×844, 430×932, and 1280×900. No deployment or physical-device verification for this change.
+
 ## Documentation cleanup — 16 October 2026
 
 - Consolidated development instructions in DEVELOPMENT.md and future-agent guidance in AGENT.md; simplified README around the product and direction.

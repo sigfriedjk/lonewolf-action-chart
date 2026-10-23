@@ -64,7 +64,7 @@ const elements=new Map(),listeners=new Map();
 const initial=JSON.stringify({version:3,activeBook:12,books:{12:C.startBook(12,null,{...opts,items:['Sword']})}});
 const storage=new Map([['lone-wolf-action-chart-v3',initial]]);
 function element(key){if(!elements.has(key))elements.set(key,{dataset:{},classList:{add(){},remove(){}},addEventListener(){},focus(){},close(){},showModal(){},scrollTop:0});return elements.get(key);}
-const context=vm.createContext({window:{LWRules:R,LWCampaign:C,addEventListener(){}},document:{querySelector:element,addEventListener(type,fn){listeners.set(type,fn);}},localStorage:{getItem:key=>storage.get(key)??null,setItem:(key,value)=>storage.set(key,value)},crypto:{getRandomValues(a){a[0]=5;return a;}},matchMedia:()=>({matches:false}),setTimeout:()=>0,clearTimeout(){},console});
+const context=vm.createContext({window:{LWRules:R,LWCampaign:C,LWSaves:require('../saves.js'),addEventListener(){}},document:{querySelector:element,addEventListener(type,fn){listeners.set(type,fn);}},localStorage:{getItem:key=>storage.get(key)??null,setItem:(key,value)=>storage.set(key,value)},crypto:{getRandomValues(a){a[0]=5;return a;}},matchMedia:()=>({matches:false}),setTimeout:()=>0,clearTimeout(){},console});
 context.FormData=class{constructor(form){this.values=form.values;}get(key){const v=this.values[key];return Array.isArray(v)?v[0]??null:v??null;}getAll(key){const v=this.values[key];return v===undefined?[]:Array.isArray(v)?v:[v];}has(key){return Object.hasOwn(this.values,key);}};
 const run=code=>vm.runInContext(code,context);
 run(fs.readFileSync(require.resolve('../app.js'),'utf8'));
@@ -79,7 +79,7 @@ run('state.ep=6;persist();');click('arch-cure');assert.equal(run('state.ep'),25)
 submit('adjusted-roll-form',{roll:'9',modifier:'-1',bow:'on',mentora:'on'});
 assert.equal(run('state.lastAdjustedRoll.total'),13);assert.equal(run('state.lastRoll'),9);
 run('campaign=load();state=campaign.books[12];');assert.equal(run('state.lastAdjustedRoll.total'),13);assert.equal(run('state.psychicMode'),'archSurge');
-run(`campaign.books[10]=${JSON.stringify(C.startBook(10,null,{...opts,items:['Sword']}))};`);
+run(`change(()=>{keepCheckpoint();state=C.validateCharacter(${JSON.stringify(C.startBook(10,null,{...opts,items:['Sword']}))});});`);
 run('bookSetupDialog(11,true);');assert.doesNotMatch(element('#dialog').innerHTML,/name="gold"|name="item1"/);
 // From an earlier source, the actual continuation form preserves carried weapons.
 submit('book2-form',{completed:'on'},{book:'11',source:'10',continuing:'true'});
